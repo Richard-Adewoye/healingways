@@ -1,0 +1,256 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Bell } from 'lucide-react';
+
+export default function ProfileView() {
+  const router = useRouter();
+
+  // Personal Information State
+  const [formData, setFormData] = useState({
+    fullName: 'Amara Chukwu',
+    email: 'amara.chukwu@example.com',
+    phone: '',
+    country: 'Nigeria',
+    preferredContact: 'Email',
+  });
+
+  // Notification Preferences State
+  const [notifications, setNotifications] = useState({
+    email: true,
+    sms: true,
+    whatsapp: false,
+  });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleToggle = (key: keyof typeof notifications) => {
+    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Saved Profile:', formData, notifications);
+  };
+
+  const handleLogout = () => {
+    // Perform logout logic here
+    router.push('/login');
+  };
+
+  return (
+    <div className="flex-1 bg-slate-50/50 min-h-screen p-6 sm:p-10 space-y-8 max-w-4xl">
+      
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between border-b border-gray-200/80 pb-5">
+        <h1 className="text-xl font-bold text-blue-900">Profile</h1>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            ← Back to Website
+          </Link>
+          <button className="p-2 text-gray-500 hover:text-gray-700 relative rounded-full hover:bg-slate-100">
+            <Bell className="w-5 h-5 text-gray-600" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          </button>
+          <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+            A
+          </div>
+        </div>
+      </div>
+
+      {/* Title Section */}
+      <div className="space-y-1">
+        <h2 className="text-2xl sm:text-3xl font-bold text-blue-900">Profile</h2>
+        <p className="text-xs sm:text-sm text-gray-500">
+          Manage your personal information and communication preferences.
+        </p>
+      </div>
+
+      {/* Main Form & Content Cards */}
+      <div className="space-y-6 max-w-xl">
+        
+        {/* Personal Information Card */}
+        <form onSubmit={handleSave} className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 block mb-2">
+            PERSONAL INFORMATION
+          </span>
+
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-800">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            />
+          </div>
+
+          {/* Email */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-800">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            />
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-800">
+              Phone
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            />
+          </div>
+
+          {/* Country */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-800">
+              Country
+            </label>
+            <input
+              type="text"
+              name="country"
+              value={formData.country}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            />
+          </div>
+
+          {/* Preferred Contact Method */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-800">
+              Preferred Contact Method
+            </label>
+            <select
+              name="preferredContact"
+              value={formData.preferredContact}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            >
+              <option value="Email">Email</option>
+              <option value="Phone">Phone</option>
+              <option value="SMS">SMS</option>
+              <option value="WhatsApp">WhatsApp</option>
+            </select>
+          </div>
+
+          {/* Save Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-lg shadow-sm transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+
+        {/* Notification Preferences Card */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 block mb-2">
+            NOTIFICATION PREFERENCES
+          </span>
+
+          <div className="space-y-4">
+            {/* Email Notifications Toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleToggle('email')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  notifications.email ? 'bg-emerald-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    notifications.email ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <span className="text-xs sm:text-sm text-slate-800 font-medium">
+                Email notifications
+              </span>
+            </div>
+
+            {/* SMS Notifications Toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleToggle('sms')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  notifications.sms ? 'bg-emerald-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    notifications.sms ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <span className="text-xs sm:text-sm text-slate-800 font-medium">
+                SMS notifications
+              </span>
+            </div>
+
+            {/* WhatsApp Notifications Toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleToggle('whatsapp')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  notifications.whatsapp ? 'bg-emerald-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    notifications.whatsapp ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <span className="text-xs sm:text-sm text-slate-800 font-medium">
+                WhatsApp notifications
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Log Out Button */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="px-6 py-2.5 bg-white hover:bg-emerald-50 border border-emerald-600 text-emerald-700 font-semibold text-xs sm:text-sm rounded-lg transition-colors"
+          >
+            Log Out
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
