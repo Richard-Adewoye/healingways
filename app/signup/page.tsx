@@ -9,9 +9,7 @@ import { registerUser } from '@/app/lib/firebase/services';
 
 function RegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // Check whether the user has a prior consultation or case record
   const [hasPriorConsultation, setHasPriorConsultation] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {

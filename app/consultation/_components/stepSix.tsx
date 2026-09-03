@@ -146,7 +146,7 @@ export default function StepSixConsent({
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="max-w-3xl mx-auto text-center space-y-3">
-        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-sm font-semibold rounded-full border border-emerald-100">
           Start Your Healthcare Journey
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
@@ -166,7 +166,7 @@ export default function StepSixConsent({
               return (
                 <div key={step.id} className="relative z-10 flex flex-col items-center group">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                       isActive
                         ? 'border-2 border-emerald-600 bg-white text-emerald-700 ring-4 ring-emerald-50'
                         : 'bg-emerald-600 text-white'
@@ -175,7 +175,7 @@ export default function StepSixConsent({
                     {step.id}
                   </div>
                   <span
-                    className={`mt-2 text-xs font-medium whitespace-nowrap hidden sm:block ${
+                    className={`mt-2 text-sm font-medium whitespace-nowrap hidden sm:block ${
                       isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'
                     }`}
                   >
@@ -200,24 +200,24 @@ export default function StepSixConsent({
         <div className="space-y-6">
           <h2 className="text-base font-bold text-slate-800 border-b pb-2 flex items-center justify-between">
             <span>Intake Summary</span>
-            <span className="text-xs text-slate-400 font-normal">Review before submitting</span>
+            <span className="text-sm text-slate-400 font-normal">Review before submitting</span>
           </h2>
 
           {/* Section 1: Patient Details */}
           <div className="p-4 bg-slate-50 rounded-xl space-y-2 relative group">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">1. Patient Profile</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">1. Patient Profile</h3>
               {onEditStep && (
                 <button
                   type="button"
                   onClick={() => onEditStep(1)}
-                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                  className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" /> Edit
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               <p><span className="text-slate-500">Name:</span> <span className="font-semibold text-slate-800">{reviewData.aboutYou?.fullName || '—'}</span></p>
               <p><span className="text-slate-500">Email:</span> <span className="font-semibold text-slate-800">{reviewData.aboutYou?.email || '—'}</span></p>
               <p><span className="text-slate-500">Phone:</span> <span className="font-semibold text-slate-800">{reviewData.aboutYou?.phone || '—'}</span></p>
@@ -228,18 +228,18 @@ export default function StepSixConsent({
           {/* Section 2: Medical Situation */}
           <div className="p-4 bg-slate-50 rounded-xl space-y-2 relative group">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">2. Medical Situation</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">2. Medical Situation</h3>
               {onEditStep && (
                 <button
                   type="button"
                   onClick={() => onEditStep(2)}
-                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                  className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" /> Edit
                 </button>
               )}
             </div>
-            <div className="space-y-1 text-xs">
+            <div className="space-y-1 text-sm">
               <p><span className="text-slate-500">Support Needed:</span> <span className="font-semibold text-slate-800">{reviewData.situation?.supportType || '—'}</span></p>
               <p><span className="text-slate-500">Specialty Area:</span> <span className="font-semibold text-slate-800">{reviewData.situation?.healthcareArea || '—'}</span></p>
               {reviewData.situation?.description && (
@@ -251,18 +251,18 @@ export default function StepSixConsent({
           {/* Section 3: Preferences */}
           <div className="p-4 bg-slate-50 rounded-xl space-y-2 relative group">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">3. Travel &amp; Preferences</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">3. Travel &amp; Preferences</h3>
               {onEditStep && (
                 <button
                   type="button"
                   onClick={() => onEditStep(5)}
-                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                  className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" /> Edit
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               <p><span className="text-slate-500">Travel Abroad:</span> <span className="font-semibold text-slate-800">{reviewData.preferences?.careAbroad || 'Yes'}</span></p>
               <p><span className="text-slate-500">Destination:</span> <span className="font-semibold text-slate-800">{reviewData.preferences?.preferredLocation || 'Open'}</span></p>
             </div>
@@ -271,11 +271,11 @@ export default function StepSixConsent({
 
         {/* Consent Checkboxes */}
         <div className="space-y-4 pt-2 border-t border-slate-100">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-600" /> Patient Declarations &amp; Consent
           </h3>
 
-          <label className="flex items-start gap-3 cursor-pointer text-xs text-slate-700">
+          <label className="flex items-start gap-3 cursor-pointer text-sm text-slate-700">
             <input
               type="checkbox"
               name="confirmAccurate"
@@ -286,7 +286,7 @@ export default function StepSixConsent({
             <span>I confirm that the medical information and records provided are accurate to the best of my knowledge.</span>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer text-xs text-slate-700">
+          <label className="flex items-start gap-3 cursor-pointer text-sm text-slate-700">
             <input
               type="checkbox"
               name="consentReview"
@@ -297,7 +297,7 @@ export default function StepSixConsent({
             <span>I consent to HealingWays clinical coordinators and hospital medical boards reviewing my records for treatment recommendations.</span>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer text-xs text-slate-700">
+          <label className="flex items-start gap-3 cursor-pointer text-sm text-slate-700">
             <input
               type="checkbox"
               name="understandDisclaimer"

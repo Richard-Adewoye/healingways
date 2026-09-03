@@ -106,7 +106,7 @@ export default function StepFivePreferences({
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="max-w-3xl mx-auto text-center space-y-3">
-        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xss font-semibold rounded-full border border-emerald-100">
           Start Your Healthcare Journey
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
@@ -127,7 +127,7 @@ export default function StepFivePreferences({
               return (
                 <div key={step.id} className="relative z-10 flex flex-col items-center group">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xss font-bold transition-all ${
                       isActive
                         ? 'border-2 border-emerald-600 bg-white text-emerald-700 ring-4 ring-emerald-50'
                         : isPast
@@ -138,7 +138,7 @@ export default function StepFivePreferences({
                     {step.id}
                   </div>
                   <span
-                    className={`mt-2 text-xs font-medium whitespace-nowrap hidden sm:block ${
+                    className={`mt-2 text-xss font-medium whitespace-nowrap hidden sm:block ${
                       isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'
                     }`}
                   >
@@ -162,7 +162,7 @@ export default function StepFivePreferences({
 
           {/* Are you open to traveling abroad */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Are you willing to travel abroad for medical treatment? <span className="text-emerald-600">*</span>
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -173,7 +173,7 @@ export default function StepFivePreferences({
                     type="button"
                     key={opt}
                     onClick={() => handleCareOutsideSelect(opt)}
-                    className={`p-3 text-xs sm:text-sm font-medium rounded-xl border text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`p-3 text-xss sm:text-sm font-medium rounded-xl border text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-semibold shadow-xs'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -189,7 +189,7 @@ export default function StepFivePreferences({
 
           {/* Preferred Destination */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Preferred Country or Destination
             </label>
             <div className="grid grid-cols-2 gap-2.5">
@@ -200,7 +200,7 @@ export default function StepFivePreferences({
                     type="button"
                     key={loc}
                     onClick={() => handleLocationSelect(loc)}
-                    className={`p-3 text-xs sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                    className={`p-3 text-xss sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-semibold shadow-xs'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -224,7 +224,7 @@ export default function StepFivePreferences({
 
           {/* Priorities */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               What matters most to you? (Select all that apply)
             </label>
             <div className="space-y-2">
@@ -235,7 +235,7 @@ export default function StepFivePreferences({
                     type="button"
                     key={p}
                     onClick={() => togglePriority(p)}
-                    className={`w-full p-3.5 text-xs sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full p-3.5 text-xss sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-semibold shadow-xs'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'

@@ -114,7 +114,7 @@ export default function StepFourDocuments({
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="max-w-3xl mx-auto text-center space-y-3">
-        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xss font-semibold rounded-full border border-emerald-100">
           Start Your Healthcare Journey
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
@@ -135,7 +135,7 @@ export default function StepFourDocuments({
               return (
                 <div key={step.id} className="relative z-10 flex flex-col items-center group">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xss font-bold transition-all ${
                       isActive
                         ? 'border-2 border-emerald-600 bg-white text-emerald-700 ring-4 ring-emerald-50'
                         : isPast
@@ -146,7 +146,7 @@ export default function StepFourDocuments({
                     {step.id}
                   </div>
                   <span
-                    className={`mt-2 text-xs font-medium whitespace-nowrap hidden sm:block ${
+                    className={`mt-2 text-xss font-medium whitespace-nowrap hidden sm:block ${
                       isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'
                     }`}
                   >
@@ -190,11 +190,11 @@ export default function StepFourDocuments({
                 <p className="text-sm font-semibold text-slate-800">
                   Click to browse or drag and drop files here
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xss text-slate-500 mt-1">
                   PDF, DICOM, JPEG, PNG, DOCX up to 50MB each
                 </p>
               </div>
-              <label className="cursor-pointer px-4 py-2 bg-white border border-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-100 transition-all shadow-sm">
+              <label className="cursor-pointer px-4 py-2 bg-white border border-slate-200 text-slate-700 font-semibold text-xss rounded-lg hover:bg-slate-100 transition-all shadow-sm">
                 Choose Files
                 <input
                   type="file"
@@ -210,14 +210,14 @@ export default function StepFourDocuments({
           {/* Uploaded File List */}
           {files.length > 0 && (
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label className="block text-sm font-semibold text-slate-800">
                 Selected Files ({files.length})
               </label>
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
                 {files.map((file, idx) => (
                   <div
                     key={idx}
-                    className="p-3 bg-white flex items-center justify-between gap-3 text-xs"
+                    className="p-3 bg-white flex items-center justify-between gap-3 text-xss"
                   >
                     <div className="flex items-center gap-2.5 truncate">
                       <File className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -240,7 +240,7 @@ export default function StepFourDocuments({
           )}
 
           {uploadProgress && (
-            <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-xss text-emerald-700 bg-emerald-50 p-3 rounded-lg">
               <Loader2 className="w-4 h-4 animate-spin shrink-0" />
               <span>{uploadProgress}</span>
             </div>

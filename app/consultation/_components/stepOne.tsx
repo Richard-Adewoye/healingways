@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth';
 import { Check, ShieldCheck, User, Users, Heart, Baby } from 'lucide-react';
-import { auth } from '@/app/lib/firebase/client';
-import { saveUserProfile } from '@/app/lib/firebase/services';
+import { saveUserProfile, registerUser, loginUser } from '@/app/lib/firebase/services';
 
 const STEPS = [
   { id: 1, label: 'About You' },
@@ -119,40 +117,36 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
     setLoading(true);
 
     try {
-      let resolvedUserId = auth.currentUser?.uid;
-
-      // If user provided a password and not currently signed in, try Firebase Auth
-      if (formData.password && !resolvedUserId) {
-        try {
-          const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            cleanEmail,
-            formData.password
-          );
-          resolvedUserId = userCredential.user.uid;
-          if (formData.fullName) {
-            await updateProfile(userCredential.user, { displayName: formData.fullName });
+      let resolvedUserId = '';
+      
+      const res = await registerUser({
+        email: cleanEmail,
+        password: formData.password,
+        fullName: formData.fullName,
+        phone: formData.phone,
+        role: 'patient',
+      });
+      
+      if (!res.success) {
+        if (res.reason === 'email_already_in_use') {
+          // Attempt login if email is already in use
+          const loginRes = await loginUser(cleanEmail, formData.password);
+          if (!loginRes.success) {
+             setErrorMsg(loginRes.error || 'Account exists but password incorrect.');
+             setLoading(false);
+             return;
           }
-        } catch (authError: any) {
-          if (authError?.code === 'auth/email-already-in-use') {
-            try {
-              const loginCred = await signInWithEmailAndPassword(auth, cleanEmail, formData.password);
-              resolvedUserId = loginCred.user.uid;
-            } catch {
-              resolvedUserId = `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            }
-          } else {
-            console.warn('Auth fallback notice:', authError?.message);
-            resolvedUserId = `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
-          }
+          resolvedUserId = loginRes.user?.uid || '';
+        } else {
+          setErrorMsg(res.error || 'Failed to create account.');
+          setLoading(false);
+          return;
         }
+      } else {
+        resolvedUserId = res.user?.uid || '';
       }
 
-      if (!resolvedUserId) {
-        resolvedUserId = `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
-      }
-
-      // Save user profile into Firestore & storage
+      // Save additional profile fields into Firestore & storage if needed
       try {
         await saveUserProfile({
           uid: resolvedUserId,
@@ -197,7 +191,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="max-w-3xl mx-auto text-center space-y-3">
-        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xsss font-semibold rounded-full border border-emerald-100">
           Step 1: Account Creation & Patient Profile
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
@@ -217,7 +211,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               return (
                 <div key={step.id} className="relative z-10 flex flex-col items-center group">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xsss font-bold transition-all ${
                       isActive
                         ? 'border-2 border-emerald-600 bg-white text-emerald-700 ring-4 ring-emerald-50'
                         : 'border border-slate-300 bg-white text-slate-500'
@@ -226,7 +220,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
                     {step.id}
                   </div>
                   <span
-                    className={`mt-2 text-xs font-medium whitespace-nowrap hidden sm:block ${
+                    className={`mt-2 text-xsss font-medium whitespace-nowrap hidden sm:block ${
                       isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'
                     }`}
                   >
@@ -250,7 +244,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
 
           {/* Relation Selector */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Who is this consultation for? <span className="text-emerald-600">*</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -279,7 +273,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
                       <IconComp className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0 pr-5">
-                      <span className={`block text-xs sm:text-sm font-semibold leading-tight ${isSelected ? 'text-emerald-950' : 'text-slate-800'}`}>
+                      <span className={`block text-xsss sm:text-sm font-semibold leading-tight ${isSelected ? 'text-emerald-950' : 'text-slate-800'}`}>
                         {opt.label}
                       </span>
                       <span className="block text-[11px] text-slate-500 mt-0.5 leading-snug">
@@ -304,7 +298,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
           {/* Patient Name (if consultation is for a family member) */}
           {formData.consultationFor !== 'Myself' && (
             <div className="space-y-1.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 animate-in fade-in duration-200">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label className="block text-sm font-semibold text-slate-800">
                 Patient&apos;s Full Name (for {formData.consultationFor})
               </label>
               <input
@@ -320,7 +314,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
 
           {/* Full Name / Contact Person */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               {formData.consultationFor === 'Myself' ? 'Full Name' : 'Your Full Name (Primary Contact)'}{' '}
               <span className="text-emerald-600">*</span>
             </label>
@@ -331,13 +325,13 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.fullName}
               onChange={handleChange}
               placeholder="e.g. Eleanor Vance"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
           {/* Email Address */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Email Address <span className="text-emerald-600">*</span>
             </label>
             <input
@@ -347,13 +341,13 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.email}
               onChange={handleChange}
               placeholder="eleanor.vance@example.com"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
           {/* Phone Number */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Phone Number <span className="text-emerald-600">*</span>
             </label>
             <input
@@ -363,13 +357,13 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.phone}
               onChange={handleChange}
               placeholder="+1 (555) 234-5678"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
           {/* Country of Residence */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Country of Residence <span className="text-emerald-600">*</span>
             </label>
             <input
@@ -379,21 +373,21 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.country}
               onChange={handleChange}
               placeholder="e.g. United States, United Kingdom, Canada"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
           {/* Account Password (Mandatory Account Creation) */}
           <div className="space-y-3 pt-4 border-t border-slate-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label className="block text-sm font-semibold text-slate-800">
                 Create Account Password <span className="text-emerald-600">*</span>
               </label>
               <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
                 Used to log in to your Journey Dashboard
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xsss text-slate-500">
               Your patient account will be created with this password, securing your medical records and allowing you to track each step of your healthcare journey.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -405,7 +399,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Password (min 6 chars) *"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
                 />
               </div>
               <div>
@@ -416,7 +410,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="Confirm password *"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>

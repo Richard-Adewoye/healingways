@@ -83,7 +83,7 @@ export default function StepThreeMedicalDetails({
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="max-w-3xl mx-auto text-center space-y-3">
-        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
+        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xss font-semibold rounded-full border border-emerald-100">
           Start Your Healthcare Journey
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
@@ -104,7 +104,7 @@ export default function StepThreeMedicalDetails({
               return (
                 <div key={step.id} className="relative z-10 flex flex-col items-center group">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xss font-bold transition-all ${
                       isActive
                         ? 'border-2 border-emerald-600 bg-white text-emerald-700 ring-4 ring-emerald-50'
                         : isPast
@@ -115,7 +115,7 @@ export default function StepThreeMedicalDetails({
                     {step.id}
                   </div>
                   <span
-                    className={`mt-2 text-xs font-medium whitespace-nowrap hidden sm:block ${
+                    className={`mt-2 text-xss font-medium whitespace-nowrap hidden sm:block ${
                       isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'
                     }`}
                   >
@@ -139,7 +139,7 @@ export default function StepThreeMedicalDetails({
 
           {/* Do you have a formal diagnosis */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Do you have an existing medical diagnosis? <span className="text-emerald-600">*</span>
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -150,7 +150,7 @@ export default function StepThreeMedicalDetails({
                     type="button"
                     key={opt}
                     onClick={() => handleDiagnosisToggle(opt)}
-                    className={`p-3 text-xs sm:text-sm font-medium rounded-xl border text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`p-3 text-xss sm:text-sm font-medium rounded-xl border text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-semibold shadow-xs'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -166,7 +166,7 @@ export default function StepThreeMedicalDetails({
 
           {/* Specific Diagnosis Name */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               Specific Diagnosis or Condition (if known)
             </label>
             <input
@@ -174,13 +174,13 @@ export default function StepThreeMedicalDetails({
               value={formData.diagnosis}
               onChange={(e) => setFormData((prev) => ({ ...prev, diagnosis: e.target.value }))}
               placeholder="e.g. Stage 2 Breast Cancer, Lumbar Herniation, Knee Osteoarthritis"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
           {/* Current Treatment Status */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-sm font-semibold text-slate-800">
               What is your current treatment status? <span className="text-emerald-600">*</span>
             </label>
             <div className="space-y-2">
@@ -191,7 +191,7 @@ export default function StepThreeMedicalDetails({
                     type="button"
                     key={status}
                     onClick={() => handleTreatmentStatusSelect(status)}
-                    className={`w-full p-3.5 text-xs sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full p-3.5 text-xss sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-semibold shadow-xs'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
