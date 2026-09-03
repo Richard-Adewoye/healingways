@@ -12,12 +12,16 @@ import {
   FileText,
   ArrowRight,
   ShieldCheck,
-  Plane
+  Plane,
+  XCircle,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { auth } from '@/app/lib/firebase/client';
 import { 
   getUserActiveCase, 
   patientConfirmAccommodationAndVisa,
+  patientDeclineAccommodationAndVisa,
   getStoredUser,
   PatientCase 
 } from '@/app/lib/firebase/services';
@@ -27,6 +31,12 @@ export default function AccommodationPage() {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [activeCase, setActiveCase] = useState<PatientCase | null>(null);
+  const [accessReason, setAccessReason] = useState<string | null>(null);
+
+  const [declining, setDeclining] = useState(false);
+  const [showDeclineForm, setShowDeclineForm] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -38,6 +48,12 @@ export default function AccommodationPage() {
       const email = user?.email || stored?.email || null;
       const c = await getUserActiveCase(uid, email);
       setActiveCase(c);
+      
+      const { checkStepAccess } = await import('@/app/lib/firebase/services');
+      const access = checkStepAccess(5, c);
+      if (!access.allowed) {
+        setAccessReason(access.reason || 'This step is locked.');
+      }
     } catch (err) {
       console.error('Error loading accommodation & visa details:', err);
     } finally {
@@ -52,13 +68,31 @@ export default function AccommodationPage() {
   const handleConfirm = async () => {
     if (!activeCase) return;
     setConfirming(true);
+    setErrorMsg(null);
     try {
       await patientConfirmAccommodationAndVisa(activeCase.id);
       await fetchData();
-    } catch (err) {
-      console.error('Error confirming accommodation & visa:', err);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error confirming accommodation and visa details.');
     } finally {
       setConfirming(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!activeCase || !declineReason.trim()) return;
+    setDeclining(true);
+    setErrorMsg(null);
+
+    try {
+      await patientDeclineAccommodationAndVisa(activeCase.id, declineReason.trim());
+      setDeclineReason('');
+      setShowDeclineForm(false);
+      await fetchData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to submit request.');
+    } finally {
+      setDeclining(false);
     }
   };
 
@@ -72,8 +106,8 @@ export default function AccommodationPage() {
   }
 
   // Gating rule: Step 4 (Medical Itinerary) must be confirmed first
-  const isItineraryConfirmed = !!activeCase?.itinerary_confirmed_by_patient;
   const isAccomConfirmed = !!activeCase?.accommodation_visa_confirmed_by_patient;
+  const isDeclined = !!activeCase?.accommodation_visa_declined;
 
   const accommodationText = activeCase?.accommodation_details || `Hotel Partner: Somerset Grand Serviced Suites (500m from Hospital)
 Room Type: Deluxe Executive 1-Bedroom Suite with kitchen & accessible bathroom
@@ -109,24 +143,23 @@ Embassy Status: Approved for e-Medical Visa processing (Est. turnaround: 48-72 h
       <HealthcareStepper />
 
       {/* Gating Check */}
-      {!isItineraryConfirmed ? (
+      {accessReason ? (
         <div className="max-w-xl mx-auto my-12 bg-slate-50/90 border border-dashed border-slate-300 rounded-3xl p-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-slate-200/80 text-slate-500 flex items-center justify-center mx-auto">
             <Lock className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-bold text-slate-700">
-            Accommodation &amp; Visa Is Locked
+            Step Locked
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-            Accommodation and visa assistance are prepared based on your exact medical itinerary dates. Please confirm your Medical Itinerary first.
+            {accessReason}
           </p>
           <div className="pt-2">
             <Link
-              href="/dashboard/medical-itinerary"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
             >
-              <span>Confirm Medical Itinerary</span>
-              <ArrowRight className="w-4 h-4" />
+              Return to Dashboard
             </Link>
           </div>
         </div>
@@ -200,28 +233,89 @@ Embassy Status: Approved for e-Medical Visa processing (Est. turnaround: 48-72 h
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
+            ) : isDeclined ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-amber-900">Alternative Options Requested</p>
+                  <p className="text-xs text-amber-800 leading-relaxed max-w-2xl">
+                    You have declined the current accommodation/visa plan. Our logistics team is reviewing your request and will provide updated options.
+                  </p>
+                </div>
+              </div>
             ) : (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <p className="text-xs sm:text-sm text-slate-600 max-w-xl">
-                  Please review the hotel details and visa documents. Confirming locks in your reservation rate and issues your formal embassy letter.
-                </p>
-                <button
-                  type="button"
-                  disabled={confirming}
-                  onClick={handleConfirm}
-                  className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-xs transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shrink-0"
-                >
-                  {confirming ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Confirming Plans...
-                    </>
-                  ) : (
-                    <>
-                      <span>Confirm Accommodation &amp; Visa</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-xl">
+                    Please review the hotel details and visa documents. Confirming locks in your reservation rate and issues your formal embassy letter.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={confirming}
+                    onClick={handleConfirm}
+                    className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-xs transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shrink-0"
+                  >
+                    {confirming ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Confirming Plans...
+                      </>
+                    ) : (
+                      <>
+                        <span>Confirm Accommodation &amp; Visa</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 text-center sm:text-left">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeclineForm(!showDeclineForm)}
+                    className="text-xs text-slate-500 hover:text-red-600 transition-colors font-medium underline underline-offset-2"
+                  >
+                    I need to change my accommodation / visa preferences
+                  </button>
+                </div>
+
+                {showDeclineForm && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3 mt-4 animate-in fade-in slide-in-from-top-2">
+                    <label className="block text-xs font-bold text-red-900">
+                      What changes are needed?
+                    </label>
+                    <textarea
+                      value={declineReason}
+                      onChange={(e) => setDeclineReason(e.target.value)}
+                      placeholder="e.g. Can we change the hotel to something closer? I need a 2-bedroom suite instead..."
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm bg-white border border-red-200 rounded-lg focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 resize-none"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setShowDeclineForm(false)}
+                        className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-md font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={declining || !declineReason.trim()}
+                        onClick={handleDecline}
+                        className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md font-semibold text-xs transition-colors flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {declining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                        Request Changes
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {errorMsg && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {errorMsg}
+                  </div>
+                )}
               </div>
             )}
           </div>

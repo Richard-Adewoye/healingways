@@ -11,12 +11,15 @@ import {
   Clock,
   MapPin,
   FileCheck2,
-  Stethoscope
+  Stethoscope,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { auth } from '@/app/lib/firebase/client';
 import { 
   getUserActiveCase, 
   patientConfirmMedicalItinerary,
+  patientDeclineMedicalItinerary,
   getStoredUser,
   PatientCase 
 } from '@/app/lib/firebase/services';
@@ -26,6 +29,12 @@ export default function MedicalItineraryPage() {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [activeCase, setActiveCase] = useState<PatientCase | null>(null);
+  const [accessReason, setAccessReason] = useState<string | null>(null);
+  
+  const [declining, setDeclining] = useState(false);
+  const [showDeclineForm, setShowDeclineForm] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -37,6 +46,12 @@ export default function MedicalItineraryPage() {
       const email = user?.email || stored?.email || null;
       const c = await getUserActiveCase(uid, email);
       setActiveCase(c);
+      
+      const { checkStepAccess } = await import('@/app/lib/firebase/services');
+      const access = checkStepAccess(4, c);
+      if (!access.allowed) {
+        setAccessReason(access.reason || 'This step is locked.');
+      }
     } catch (err) {
       console.error('Error loading medical itinerary:', err);
     } finally {
@@ -51,13 +66,31 @@ export default function MedicalItineraryPage() {
   const handleConfirmItinerary = async () => {
     if (!activeCase) return;
     setConfirming(true);
+    setErrorMsg(null);
     try {
       await patientConfirmMedicalItinerary(activeCase.id);
       await fetchData();
-    } catch (err) {
-      console.error('Error confirming itinerary:', err);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error confirming itinerary.');
     } finally {
       setConfirming(false);
+    }
+  };
+
+  const handleDeclineItinerary = async () => {
+    if (!activeCase || !declineReason.trim()) return;
+    setDeclining(true);
+    setErrorMsg(null);
+
+    try {
+      await patientDeclineMedicalItinerary(activeCase.id, declineReason.trim());
+      setDeclineReason('');
+      setShowDeclineForm(false);
+      await fetchData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to submit revision request.');
+    } finally {
+      setDeclining(false);
     }
   };
 
@@ -73,8 +106,8 @@ export default function MedicalItineraryPage() {
   // Gating rules:
   // 1. Stage 2 (Case Review) accepted
   // 2. Stage 3 (Hospital) selected
-  const hasSelectedHospital = !!activeCase?.selected_hospital_id;
   const isItineraryConfirmed = !!activeCase?.itinerary_confirmed_by_patient;
+  const isDeclined = !!activeCase?.itinerary_declined;
   const itineraryText = activeCase?.itinerary_notes || `Day 1: Arrival & Hospital Transfer, Comprehensive Pre-operative Diagnostic Screening (Blood panel, ECG, digital imaging).
 Day 2: Specialist Consultation with Surgical Chief, Pre-anesthesia Evaluation & Final Surgical Planning.
 Day 3: Scheduled Surgical Procedure in Dedicated Robotic Theater (Est. 2.5 hrs). Post-op Recovery in High Dependency Unit.
@@ -108,24 +141,23 @@ Day 12: Fit-to-Fly Certification & Airport Departure Transfer.`;
       <HealthcareStepper />
 
       {/* Gating Check */}
-      {!hasSelectedHospital ? (
+      {accessReason ? (
         <div className="max-w-xl mx-auto my-12 bg-slate-50/90 border border-dashed border-slate-300 rounded-3xl p-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-slate-200/80 text-slate-500 flex items-center justify-center mx-auto">
             <Lock className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-bold text-slate-700">
-            Medical Itinerary Is Locked
+            Step Locked
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-            Your medical itinerary requires selecting your preferred hospital first so the surgical board can schedule appointment slots and theater reservations.
+            {accessReason}
           </p>
           <div className="pt-2">
             <Link
-              href="/dashboard/recommendations"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
             >
-              <span>Choose Hospital</span>
-              <ArrowRight className="w-4 h-4" />
+              Return to Dashboard
             </Link>
           </div>
         </div>
@@ -183,6 +215,16 @@ Day 12: Fit-to-Fly Certification & Airport Departure Transfer.`;
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
+              ) : isDeclined ? (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-amber-900">Revision Requested</p>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      You have declined this itinerary and requested a revision. Our logistics team will update your schedule and notify you shortly.
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <p className="text-xs text-slate-600">
@@ -205,6 +247,55 @@ Day 12: Fit-to-Fly Certification & Airport Departure Transfer.`;
                       </>
                     )}
                   </button>
+
+                  <div className="pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowDeclineForm(!showDeclineForm)}
+                      className="text-xs text-slate-500 hover:text-red-600 transition-colors font-medium underline underline-offset-2"
+                    >
+                      I need changes to this schedule
+                    </button>
+                  </div>
+
+                  {showDeclineForm && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3 mt-4 animate-in fade-in slide-in-from-top-2">
+                      <label className="block text-xs font-bold text-red-900">
+                        What changes do you need?
+                      </label>
+                      <textarea
+                        value={declineReason}
+                        onChange={(e) => setDeclineReason(e.target.value)}
+                        placeholder="e.g. Can we delay the surgery by one day? I need more time to rest after the flight..."
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm bg-white border border-red-200 rounded-lg focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 resize-none"
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setShowDeclineForm(false)}
+                          className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-md font-medium"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={declining || !declineReason.trim()}
+                          onClick={handleDeclineItinerary}
+                          className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md font-semibold text-xs transition-colors flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {declining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                          Request Schedule Change
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {errorMsg && (
+                    <div className="mt-2 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      {errorMsg}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

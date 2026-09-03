@@ -29,6 +29,7 @@ export default function TreatmentRecoveryPage() {
   const [loading, setLoading] = useState(true);
   const [activeCase, setActiveCase] = useState<PatientCase | null>(null);
   const [updates, setUpdates] = useState<TreatmentUpdate[]>([]);
+  const [accessReason, setAccessReason] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -49,9 +50,20 @@ export default function TreatmentRecoveryPage() {
         } else {
           setUpdates([]);
         }
+        
+        const { checkStepAccess } = await import('@/app/lib/firebase/services');
+        const access = checkStepAccess(7, c);
+        if (!access.allowed) {
+          setAccessReason(access.reason || 'This step is locked.');
+        }
       } else {
         setActiveCase(null);
         setUpdates([]);
+        const { checkStepAccess } = await import('@/app/lib/firebase/services');
+        const access = checkStepAccess(7, null);
+        if (!access.allowed) {
+          setAccessReason(access.reason || 'This step is locked.');
+        }
       }
     } catch (err) {
       console.error('Error loading treatment recovery updates:', err);
@@ -74,8 +86,6 @@ export default function TreatmentRecoveryPage() {
   }
 
   // Gating rule: Step 6 (Travel Preparation) must be confirmed first
-  const isTravelConfirmed = !!activeCase?.confirmed_by_patient;
-
   return (
     <div className="flex-1 bg-slate-50/50 min-h-screen p-4 sm:p-8 md:p-10 space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full font-sans">
       
@@ -101,24 +111,23 @@ export default function TreatmentRecoveryPage() {
       <HealthcareStepper />
 
       {/* Gating Check */}
-      {!isTravelConfirmed ? (
+      {accessReason ? (
         <div className="max-w-xl mx-auto my-12 bg-slate-50/90 border border-dashed border-slate-300 rounded-3xl p-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-slate-200/80 text-slate-500 flex items-center justify-center mx-auto">
             <Lock className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-bold text-slate-700">
-            Treatment &amp; Recovery Is Locked
+            Step Locked
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-            Treatment monitoring opens once you have confirmed your travel readiness and flight logistics in Stage 6.
+            {accessReason}
           </p>
           <div className="pt-2">
             <Link
-              href="/dashboard/travel-preparation"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
             >
-              <span>Go to Travel Preparation</span>
-              <ArrowRight className="w-4 h-4" />
+              Return to Dashboard
             </Link>
           </div>
         </div>
