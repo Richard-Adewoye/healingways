@@ -27,11 +27,11 @@ export default function ServicesActivation() {
               One patient. One case. One coordinated journey.
             </h2>
             <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-xl">
-              You don't choose services from a menu. You begin with a consultation, and our team activates the right combination of support — translation, hospital placement, accommodation, visa support — based entirely on your case.
+              You don&apos;t choose services from a menu. You begin with a consultation, and our team activates the right combination of support — translation, hospital placement, accommodation, visa support — based entirely on your case.
             </p>
             <div>
               <Link
-                href="#consultation"
+                href="/consultation"
                 className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm text-sm transition-colors"
               >
                 Start Your Healthcare Journey

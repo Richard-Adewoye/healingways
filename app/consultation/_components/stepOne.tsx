@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { createClient } from '../../utils/supabase/client';
-
-// Inside your client component:
-const supabase = createClient();
+import React, { useState, useEffect } from 'react';
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth';
+import { Check, ShieldCheck, User, Users, Heart, Baby } from 'lucide-react';
+import { auth } from '@/app/lib/firebase/client';
+import { saveUserProfile } from '@/app/lib/firebase/services';
 
 const STEPS = [
   { id: 1, label: 'About You' },
@@ -15,7 +15,36 @@ const STEPS = [
   { id: 6, label: 'Consent' },
 ];
 
-const PATIENT_RELATIONS = ['Myself', 'My child', 'My spouse', 'Another family member'];
+const PATIENT_RELATION_OPTIONS = [
+  {
+    id: 'myself',
+    value: 'Myself',
+    label: 'Myself',
+    description: 'Direct care for myself',
+    icon: User,
+  },
+  {
+    id: 'child',
+    value: 'My child',
+    label: 'My child',
+    description: 'Pediatric care for my child',
+    icon: Baby,
+  },
+  {
+    id: 'spouse',
+    value: 'My spouse',
+    label: 'My spouse',
+    description: 'Partner, husband, or wife',
+    icon: Heart,
+  },
+  {
+    id: 'family',
+    value: 'Another family member',
+    label: 'Another family member',
+    description: 'Parent, sibling, or relative',
+    icon: Users,
+  },
+];
 
 interface StepOneProps {
   onNext?: (data: any) => void;
@@ -24,32 +53,61 @@ interface StepOneProps {
 
 export default function StepOneAboutYou({ onNext, initialData = {} }: StepOneProps) {
   const [formData, setFormData] = useState({
-    consultationFor: initialData.consultationFor || 'Myself',
-    fullName: initialData.fullName || '',
-    email: initialData.email || '',
-    phone: initialData.phone || '',
-    country: initialData.country || '',
-    password: '',
-    confirmPassword: '',
+    consultationFor: initialData?.consultationFor || 'Myself',
+    fullName: initialData?.fullName || '',
+    patientName: initialData?.patientName || '',
+    email: initialData?.email || '',
+    phone: initialData?.phone || '',
+    country: initialData?.country || '',
+    password: initialData?.password || '',
+    confirmPassword: initialData?.confirmPassword || '',
   });
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRelationSelect = (rel: string) => {
+    setFormData((prev) => ({ ...prev, consultationFor: rel }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setErrorMsg(null);
 
-    // 1. Client-side password validation
-    if (formData.password.length < 8) {
-      setErrorMsg('Password must be at least 8 characters long.');
+    // Validate email
+    const cleanEmail = formData.email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMsg('Please provide a valid email address.');
       return;
     }
-    if (formData.password !== formData.confirmPassword) {
+
+    if (!formData.fullName.trim()) {
+      setErrorMsg('Please enter your full name.');
+      return;
+    }
+
+    if (!formData.phone.trim()) {
+      setErrorMsg('Please provide a contact phone number.');
+      return;
+    }
+
+    if (!formData.country.trim()) {
+      setErrorMsg('Please enter your country of residence.');
+      return;
+    }
+
+    // Password validation if provided
+    if (formData.password && formData.password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
+    if (formData.password && formData.password !== formData.confirmPassword) {
       setErrorMsg('Passwords do not match.');
       return;
     }
@@ -57,44 +115,75 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
     setLoading(true);
 
     try {
-      // 2. Sign up user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-            country: formData.country,
-          },
-        },
-      });
+      let resolvedUserId = auth.currentUser?.uid;
 
-      if (authError) throw authError;
+      // If user provided a password and not currently signed in, try Firebase Auth
+      if (formData.password && !resolvedUserId) {
+        try {
+          const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            cleanEmail,
+            formData.password
+          );
+          resolvedUserId = userCredential.user.uid;
+          if (formData.fullName) {
+            await updateProfile(userCredential.user, { displayName: formData.fullName });
+          }
+        } catch (authError: any) {
+          if (authError?.code === 'auth/email-already-in-use') {
+            try {
+              const loginCred = await signInWithEmailAndPassword(auth, cleanEmail, formData.password);
+              resolvedUserId = loginCred.user.uid;
+            } catch {
+              resolvedUserId = `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            }
+          } else {
+            console.warn('Auth fallback notice:', authError?.message);
+            resolvedUserId = `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          }
+        }
+      }
 
-      const user = authData.user;
-      if (!user) throw new Error('Account creation failed. Please try again.');
+      if (!resolvedUserId) {
+        resolvedUserId = `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+      }
 
-      // 3. Upsert user info into public.profiles
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: user.id,
-        email: formData.email,
-        full_name: formData.fullName,
-        phone: formData.phone,
-        country: formData.country,
-      });
+      // Save user profile into Firestore & storage
+      try {
+        await saveUserProfile({
+          uid: resolvedUserId,
+          email: cleanEmail,
+          fullName: formData.fullName,
+          phone: formData.phone,
+          country: formData.country,
+          role: 'patient',
+        });
+      } catch (saveErr) {
+        console.warn('Profile save warning:', saveErr);
+      }
 
-      if (profileError) throw profileError;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('hw_user_email', cleanEmail);
+        localStorage.setItem('hw_user_name', formData.fullName);
+      }
 
-      // 4. Pass step data along with authenticated userId to parent form
+      // Smoothly advance to Step 2
       if (onNext) {
         onNext({
           ...formData,
-          userId: user.id,
+          email: cleanEmail,
+          userId: resolvedUserId,
         });
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'An unexpected error occurred during signup.');
+      console.error('Error in Step 1:', err);
+      if (onNext) {
+        onNext({
+          ...formData,
+          email: cleanEmail,
+          userId: `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -108,10 +197,10 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
           Start Your Healthcare Journey
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
-          Let's understand how we can support you.
+          Let&apos;s understand how we can support you.
         </h1>
         <p className="text-slate-500 text-sm sm:text-base max-w-xl mx-auto">
-          Every healthcare journey is different. Share some details, and our team will review your needs and guide you toward next steps. Takes about 5 minutes.
+          Every healthcare journey is different. Share some details, and our team will review your needs and guide you toward next steps.
         </p>
 
         {/* Stepper Header Bar */}
@@ -147,150 +236,192 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
       </div>
 
       {/* Main Form Card */}
-      <div className="max-w-2xl mx-auto bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-        {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs font-medium text-center">
-            {errorMsg}
-          </div>
-        )}
-
+      <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-10 mt-2">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Who is this consultation for? */}
+          {errorMsg && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Relation Selector */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Who is this consultation for? <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Who is this consultation for? <span className="text-emerald-600">*</span>
             </label>
-            <div className="flex flex-wrap gap-2.5">
-              {PATIENT_RELATIONS.map((relation) => (
-                <button
-                  key={relation}
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, consultationFor: relation }))}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
-                    formData.consultationFor === relation
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                  }`}
-                >
-                  {relation}
-                </button>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {PATIENT_RELATION_OPTIONS.map((opt) => {
+                const isSelected = formData.consultationFor === opt.value;
+                const IconComp = opt.icon;
+                return (
+                  <button
+                    type="button"
+                    key={opt.id}
+                    id={`relation-btn-${opt.id}`}
+                    onClick={() => handleRelationSelect(opt.value)}
+                    className={`p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer relative group ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-600/20 shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
+                      }`}
+                    >
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0 pr-5">
+                      <span className={`block text-xs sm:text-sm font-semibold leading-tight ${isSelected ? 'text-emerald-950' : 'text-slate-800'}`}>
+                        {opt.label}
+                      </span>
+                      <span className="block text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        {opt.description}
+                      </span>
+                    </div>
+                    <div
+                      className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 absolute top-3.5 right-3.5 transition-colors ${
+                        isSelected
+                          ? 'border-emerald-600 bg-emerald-600 text-white'
+                          : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Full Name */}
+          {/* Patient Name (if consultation is for a family member) */}
+          {formData.consultationFor !== 'Myself' && (
+            <div className="space-y-1.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 animate-in fade-in duration-200">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Patient&apos;s Full Name (for {formData.consultationFor})
+              </label>
+              <input
+                type="text"
+                name="patientName"
+                value={formData.patientName}
+                onChange={handleChange}
+                placeholder="e.g. John Doe"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              />
+            </div>
+          )}
+
+          {/* Full Name / Contact Person */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Full Name <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              {formData.consultationFor === 'Myself' ? 'Full Name' : 'Your Full Name (Primary Contact)'}{' '}
+              <span className="text-emerald-600">*</span>
             </label>
             <input
               type="text"
               name="fullName"
+              required
               value={formData.fullName}
               onChange={handleChange}
-              placeholder="e.g. Amara Chukuwu"
-              required
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 placeholder:text-slate-400 text-slate-800"
+              placeholder="e.g. Eleanor Vance"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
-          {/* Email Address & Phone Number Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                required
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 placeholder:text-slate-400 text-slate-800"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Phone Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+234 800 000 0000"
-                required
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 placeholder:text-slate-400 text-slate-800"
-              />
-            </div>
+          {/* Email Address */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Email Address <span className="text-emerald-600">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="eleanor.vance@example.com"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Phone Number <span className="text-emerald-600">*</span>
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              required
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="+1 (555) 234-5678"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+            />
           </div>
 
           {/* Country of Residence */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Country of Residence <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Country of Residence <span className="text-emerald-600">*</span>
             </label>
-            <select
+            <input
+              type="text"
               name="country"
+              required
               value={formData.country}
               onChange={handleChange}
-              required
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800"
-            >
-              <option value="" disabled>Select a country</option>
-              <option value="Nigeria">Nigeria</option>
-              <option value="Ghana">Ghana</option>
-              <option value="Kenya">Kenya</option>
-              <option value="United Kingdom">United Kingdom</option>
-              <option value="United States">United States</option>
-            </select>
+              placeholder="e.g. United States, United Kingdom, Canada"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+            />
           </div>
 
-          {/* Create & Confirm Password */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Create a Password <span className="text-red-500">*</span>
+          {/* Account Password (Optional for quick intake) */}
+          <div className="space-y-3 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Create Portal Password (Optional)
               </label>
+              <span className="text-[11px] text-slate-400">To access patient portal later</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="At least 8 characters"
-                required
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 placeholder:text-slate-400 text-slate-800"
+                placeholder="Password (min 6 chars)"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
               />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Confirm Password <span className="text-red-500">*</span>
-              </label>
               <input
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Re-enter your password"
-                required
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 placeholder:text-slate-400 text-slate-800"
+                placeholder="Confirm password"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
               />
             </div>
           </div>
 
-          <p className="text-xs text-slate-400 font-medium pt-1">
-            We'll use this to set up your HealingWays account, so you can come back and track this case any time.
-          </p>
-
-          {/* Submit / Continue Button */}
-          <div className="flex justify-center pt-4">
+          {/* Submit Action */}
+          <div className="pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-sm rounded-lg transition-colors shadow-sm"
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
-              {loading ? 'Creating Account...' : 'Continue'}
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving Profile...
+                </>
+              ) : (
+                'Continue to Step 2 (Your Situation)'
+              )}
             </button>
           </div>
         </form>

@@ -19,7 +19,7 @@ export default function AboutHero() {
             </p>
             <div className="pt-2">
               <a
-                href="#consultation"
+                href="/consultation"
                 className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition"
               >
                 Book a Consultation

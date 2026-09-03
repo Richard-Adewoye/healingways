@@ -100,7 +100,7 @@ export default function Navbar() {
               Patient Portal
             </Link>
             <Link
-              href="#consultation"
+              href="/consultation"
               onClick={() => setMobileMenuOpen(false)}
               className="text-center px-5 py-2.5 bg-emerald-600 text-white text-base font-medium rounded-full"
             >

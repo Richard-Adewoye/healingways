@@ -1,215 +1,324 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { createClient } from '../utils/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { UserX, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { loginUser } from '@/app/lib/firebase/services';
 
 export default function PatientLoginForm() {
   const router = useRouter();
-  const supabase = createClient();
+  const searchParams = useSearchParams();
 
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  /**
-   * Helper function to verify if the authenticated user has completed
-   * a consultation form before sending them to the dashboard.
-   */
-  const routeUserAfterAuth = async (userId: string) => {
+  const [identifier, setIdentifier] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
     try {
-      const { data: userCase, error } = await supabase
-        .from('cases')
-        .select('id, stage, user_id')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        // Detailed log to trace RLS / Database column issues
-        console.error('Supabase Case Query Error:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
-        
-        // If an RLS or database error occurs, redirect to consultation intake
-        router.push('/consultation');
-        return;
-      }
-
-      // If no case exists for this user, send them to fill the form
-      if (!userCase) {
-        router.push('/consultation');
-      } else {
-        router.push('/dashboard');
-      }
-      router.refresh();
-    } catch (err: any) {
-      console.error('Error verifying consultation status:', err?.message || err);
-      router.push('/consultation');
+      const qEmail = searchParams?.get('email');
+      return qEmail || sessionStorage.getItem('hw_login_draft_email') || localStorage.getItem('hw_user_email') || '';
+    } catch {
+      return '';
     }
+  });
+
+  const [password, setPassword] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      return sessionStorage.getItem('hw_login_draft_password') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const [notFoundUser, setNotFoundUser] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return sessionStorage.getItem('hw_login_not_found_user') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return sessionStorage.getItem('hw_login_error_msg') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Sync if searchParams email changes later
+  useEffect(() => {
+    const qEmail = searchParams?.get('email');
+    if (qEmail && qEmail !== identifier) {
+      setIdentifier(qEmail);
+    }
+  }, [searchParams, identifier]);
+
+  // Persist draft changes into sessionStorage
+  const handleEmailChange = (val: string) => {
+    setIdentifier(val);
+    if (notFoundUser) {
+      setNotFoundUser(null);
+      try { sessionStorage.removeItem('hw_login_not_found_user'); } catch {}
+    }
+    if (errorMessage) {
+      setErrorMessage(null);
+      try { sessionStorage.removeItem('hw_login_error_msg'); } catch {}
+    }
+    try {
+      sessionStorage.setItem('hw_login_draft_email', val);
+      if (val) localStorage.setItem('hw_user_email', val);
+    } catch {}
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePasswordChange = (val: string) => {
+    setPassword(val);
+    try {
+      sessionStorage.setItem('hw_login_draft_password', val);
+    } catch {}
+  };
+
+  const handleLogin = async (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      if ('stopPropagation' in e && typeof e.stopPropagation === 'function') {
+        e.stopPropagation();
+      }
+    }
+
     setLoading(true);
     setErrorMessage(null);
+    setNotFoundUser(null);
+    try {
+      sessionStorage.removeItem('hw_login_error_msg');
+      sessionStorage.removeItem('hw_login_not_found_user');
+    } catch {}
 
-    const cleanIdentifier = identifier.trim();
-    const isPhone = /^[+\d\s-]+$/.test(cleanIdentifier) && !cleanIdentifier.includes('@');
-
-    const { data, error } = await supabase.auth.signInWithPassword(
-      isPhone
-        ? { phone: cleanIdentifier, password }
-        : { email: cleanIdentifier, password }
-    );
-
-    if (error) {
-      if (error.message.toLowerCase().includes('email not confirmed')) {
-        setErrorMessage('Email not confirmed yet. Please check your inbox or contact support.');
-      } else {
-        setErrorMessage(error.message);
-      }
+    const cleanEmail = identifier.trim();
+    if (!cleanEmail) {
+      const msg = 'Please enter your email address.';
+      setErrorMessage(msg);
+      try { sessionStorage.setItem('hw_login_error_msg', msg); } catch {}
       setLoading(false);
       return;
     }
 
-    if (data.user) {
-      await routeUserAfterAuth(data.user.id);
+    try {
+      const res = await loginUser(cleanEmail, password);
+
+      if (res.success && res.user) {
+        // Clean up draft passwords & errors upon successful authentication
+        try {
+          sessionStorage.removeItem('hw_login_draft_password');
+          sessionStorage.removeItem('hw_login_not_found_user');
+          sessionStorage.removeItem('hw_login_error_msg');
+        } catch {}
+
+        if (res.user.role === 'admin' || cleanEmail.toLowerCase().includes('admin')) {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+        return;
+      }
+
+      if (res.reason === 'not_found') {
+        setNotFoundUser(cleanEmail);
+        try {
+          sessionStorage.setItem('hw_login_not_found_user', cleanEmail);
+          sessionStorage.setItem('hw_signup_draft_email', cleanEmail);
+          if (password) {
+            sessionStorage.setItem('hw_signup_draft_password', password);
+          }
+        } catch {}
+      } else if (res.reason === 'wrong_password') {
+        const msg = 'Incorrect password. Please verify your credentials and try again.';
+        setErrorMessage(msg);
+        try { sessionStorage.setItem('hw_login_error_msg', msg); } catch {}
+      } else {
+        const msg = res.error || 'Failed to sign in. Please verify your credentials.';
+        setErrorMessage(msg);
+        try { sessionStorage.setItem('hw_login_error_msg', msg); } catch {}
+      }
+    } catch (error: unknown) {
+      console.error('Login error:', error);
+      const err = error as { message?: string };
+      const msg = err?.message || 'An error occurred during sign in. Please try again.';
+      setErrorMessage(msg);
+      try { sessionStorage.setItem('hw_login_error_msg', msg); } catch {}
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: 'demo@healingways.com',
-      password: 'DemoPassword123!',
-    });
-
-    if (error) {
-      router.push('/dashboard');
-      return;
-    }
-
-    if (data.user) {
-      await routeUserAfterAuth(data.user.id);
-    }
+  const handleRedirectToSignup = (targetEmail: string) => {
+    try {
+      sessionStorage.setItem('hw_signup_draft_email', targetEmail);
+      if (password) {
+        sessionStorage.setItem('hw_signup_draft_password', password);
+      }
+    } catch {}
+    router.push(`/signup?email=${encodeURIComponent(targetEmail)}&from=login`);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-gray-100 p-8 sm:p-10 space-y-6">
-        
         {/* Header & Logo */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <div className="relative w-40 h-20 mb-1">
+          <Link href="/" className="relative w-44 h-16 mb-1 block">
             <Image
-              src="/images/logo.png"
+              src="/healing-ways-logo.png"
               alt="HealingWays Logo"
               fill
               className="object-contain"
               priority
             />
-          </div>
+          </Link>
+          <h1 className="text-xl font-bold text-blue-950">Welcome Back</h1>
           <p className="text-xs sm:text-sm text-gray-500 font-medium">
-            Welcome back to your healthcare journey.
+            Sign in to access your consultations and care journey.
           </p>
         </div>
 
-        {/* Error Alert Box */}
+        {/* Account Not Found Prompt */}
+        {notFoundUser && (
+          <div className="p-4 bg-amber-50/95 border border-amber-200 rounded-2xl space-y-3 animate-fadeIn">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5 text-amber-700">
+                <UserX className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold text-amber-900">No account found</h4>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  We could not find an account associated with <strong className="font-semibold text-amber-950">{notFoundUser}</strong>.
+                  Please sign up to create your profile and get started.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleRedirectToSignup(notFoundUser)}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Create Account with This Email</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Generic Error Alert Box */}
         {errorMessage && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-medium text-center">
-            {errorMessage}
+          <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-5">
-          {/* Email or Phone Input */}
+        <form
+          action="#"
+          method="POST"
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLogin(e);
+          }}
+          className="space-y-4"
+        >
+          {/* Email Input */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-blue-900">
-              Email or Phone
+              Email Address
             </label>
             <input
-              type="text"
+              type="email"
               required
               value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="you@example.com or +1234567890"
+              onChange={(e) => handleEmailChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleLogin(e);
+                }
+              }}
+              placeholder="patient@healingways.com"
               disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
             />
           </div>
 
           {/* Password Input */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
-              Password
-            </label>
+            <div className="flex justify-between items-center">
+              <label className="block text-xs font-bold text-blue-900">
+                Password
+              </label>
+            </div>
             <input
               type="password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => handlePasswordChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleLogin(e);
+                }
+              }}
               placeholder="••••••••"
               disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
             />
           </div>
 
-          {/* Main Submit Button */}
+          {/* Main Submit Button: type="button" strictly prevents native browser form refresh */}
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLogin(e);
+            }}
             disabled={loading}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center"
+            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center cursor-pointer mt-2"
           >
-            {loading ? 'Verifying account...' : 'Login'}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                Signing in...
+              </span>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
 
-        {/* Forgot Password Link */}
-        <div className="text-center">
-          <Link
-            href="/forgot-password"
-            className="text-xs sm:text-sm font-bold text-blue-900 hover:underline transition-all"
-          >
-            Forgot password?
-          </Link>
+        {/* Footer Navigation */}
+        <div className="pt-4 border-t border-gray-100 space-y-3 text-center">
+          <p className="text-xs text-gray-600">
+            Don&apos;t have an account?{' '}
+            <Link
+              href={identifier ? `/signup?email=${encodeURIComponent(identifier)}&from=login` : '/signup'}
+              className="font-bold text-emerald-700 hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
+          <p className="text-xs text-gray-500">
+            Need immediate medical guidance?{' '}
+            <Link
+              href="/consultation"
+              className="font-medium text-blue-900 hover:underline"
+            >
+              Start Free Consultation Intake
+            </Link>
+          </p>
         </div>
-
-        <div className="border-t border-gray-100 pt-2" />
-
-        {/* Demo Patient Button */}
-        <div>
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            disabled={loading}
-            className="w-full py-3 bg-white hover:bg-emerald-50 border border-emerald-600 text-emerald-700 font-semibold text-sm rounded-lg transition-colors disabled:opacity-50"
-          >
-            Continue as Demo Patient
-          </button>
-        </div>
-
-        {/* Sign Up Link: Redirects to consultation form */}
-        <div className="text-center text-xs text-gray-500 pt-2">
-          New to HealingWays?{' '}
-          <Link
-            href="/consultation"
-            className="font-bold text-blue-900 hover:underline transition-all"
-          >
-            Start Consultation Form
-          </Link>
-        </div>
-
       </div>
     </div>
   );

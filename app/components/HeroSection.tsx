@@ -31,13 +31,13 @@ export default function HeroSection() {
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 pt-4">
               <Link
-                href="#consultation"
+                href="/consultation"
                 className="px-6 py-3 bg-gradient-to-r from-[#44a868] to-[#2e8b50] hover:brightness-105 text-white font-medium text-sm rounded-xl shadow-md transition-all"
               >
                 Start Consultation
               </Link>
               <Link
-                href="#services"
+                href="/services"
                 className="px-6 py-3 bg-[#e8f1ff] hover:bg-white text-[#2b72a0] font-medium text-sm rounded-xl shadow-md transition-all"
               >
                 Explore Services

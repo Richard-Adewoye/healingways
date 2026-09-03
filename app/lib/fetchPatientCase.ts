@@ -1,4 +1,4 @@
-import { createClient } from '../utils/supabase/server';
+import { getCaseById, PatientCase } from './firebase/services';
 
 export interface PatientCaseDetails {
   id: string;
@@ -16,31 +16,28 @@ export interface PatientCaseDetails {
 }
 
 export async function getPatientCaseById(caseId: string): Promise<PatientCaseDetails | null> {
-  const supabase = await createClient();
+  try {
+    const c = await getCaseById(caseId);
+    if (!c) return null;
 
-  const { data, error } = await supabase
-    .from('cases')
-    .select(`
-      id,
-      created_at,
-      support_type,
-      diagnosis,
-      situation_description,
-      status,
-      profiles (
-        full_name,
-        email,
-        phone,
-        country
-      )
-    `)
-    .eq('id', caseId)
-    .single();
-
-  if (error) {
-    console.error('Error fetching patient case details:', error.message);
+    return {
+      id: c.id,
+      created_at: c.created_at,
+      support_type: c.support_type || c.need,
+      diagnosis: c.diagnosis || c.need,
+      situation_description: c.situation_description || c.situation || '',
+      status: c.status,
+      profiles: [
+        {
+          full_name: c.patient_name,
+          email: c.patient_email,
+          phone: c.patient_phone || '',
+          country: c.country || '',
+        },
+      ],
+    };
+  } catch (err) {
+    console.error('Error fetching patient case details from Firebase:', err);
     return null;
   }
-
-  return data as PatientCaseDetails;
 }

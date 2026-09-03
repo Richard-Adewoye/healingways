@@ -32,13 +32,13 @@ export default function AboutJourneyCTA() {
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-2">
             <a
-              href="#consultation"
+              href="/consultation"
               className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm text-sm transition"
             >
               Book Your Consultation
             </a>
             <a
-              href="#contact"
+              href="/contact"
               className="px-6 py-3 bg-transparent hover:bg-blue-800 border border-blue-400 text-white font-medium rounded-lg text-sm transition"
             >
               Contact Us

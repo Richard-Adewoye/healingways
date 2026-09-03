@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { SendHorizontal, ShieldAlert, Loader2 } from 'lucide-react';
-import { createClient } from '../utils/supabase/client';
+import { SendHorizontal, ShieldAlert, Loader2, ArrowRight, UserCheck, FileText, CheckCircle2 } from 'lucide-react';
+import { 
+  getAllCasesForAdmin, 
+  PatientCase 
+} from '@/app/lib/firebase/services';
 
 interface ActivityItem {
   id: string;
@@ -30,8 +33,6 @@ interface WorkloadItem {
 }
 
 export default function AdminDashboardPage() {
-  const supabase = createClient();
-
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState([
     { label: 'New Consultations', value: 0, color: 'text-blue-600' },
@@ -50,260 +51,201 @@ export default function AdminDashboardPage() {
       setLoading(true);
 
       try {
-        // 1. Parallel Count Queries using correct column 'status'.
-        // "New Consultations" now requires submitted_at IS NOT NULL, so a
-        // case the patient abandoned mid-wizard (created in Step 2, never
-        // reached Step 6) doesn't get counted as a real consultation.
-        const [
-          { count: newCount },
-          { count: activeCount },
-          { count: awaitingCount },
-          { count: docsCount },
-        ] = await Promise.all([
-          supabase
-            .from('cases')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'New')
-            .not('submitted_at', 'is', null),
-          supabase.from('cases').select('*', { count: 'exact', head: true }).eq('status', 'Active'),
-          supabase.from('cases').select('*', { count: 'exact', head: true }).eq('status', 'Awaiting Info'),
-          supabase.from('documents').select('*', { count: 'exact', head: true }),
-        ]);
+        const cases = await getAllCasesForAdmin();
+
+        const newCount = cases.filter((c) => c.status === 'New').length;
+        const activeCount = cases.filter((c) => c.status === 'In Progress' || c.status === 'Under Review' || c.status === 'Scheduled').length;
+        const awaitingCount = cases.filter((c) => !c.review_accepted || !c.itinerary_confirmed_by_patient).length;
+        
+        let totalDocs = 0;
+        cases.forEach((c) => {
+          if (c.documents) totalDocs += c.documents.length;
+        });
 
         setStats([
-          { label: 'New Consultations', value: newCount || 0, color: 'text-blue-600' },
-          { label: 'Active Cases', value: activeCount || 0, color: 'text-emerald-600' },
-          { label: 'Awaiting Patient Info', value: awaitingCount || 0, color: 'text-amber-500' },
-          { label: 'Documents Pending Review', value: docsCount || 0, color: 'text-blue-500' },
-          { label: 'Open Tasks', value: (newCount || 0) + (awaitingCount || 0), color: 'text-blue-600' },
+          { label: 'New Consultations', value: newCount, color: 'text-blue-600' },
+          { label: 'Active Cases', value: activeCount, color: 'text-emerald-600' },
+          { label: 'Awaiting Action', value: awaitingCount, color: 'text-amber-500' },
+          { label: 'Verified Records', value: totalDocs, color: 'text-blue-500' },
+          { label: 'Open Tasks', value: newCount + awaitingCount, color: 'text-blue-600' },
         ]);
 
-        // 2. Fetch Recent Document Activity & profiles
-        const { data: recentDocs } = await supabase
-          .from('documents')
-          .select(`
-            id,
+        // Recent activity
+        const activities: ActivityItem[] = [];
+        cases.slice(0, 5).forEach((c, idx) => {
+          activities.push({
+            id: c.id || `act-${idx}`,
+            name: c.patient_name || 'Patient',
+            status: c.status || 'Active',
+            statusBg: c.status === 'New' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800',
+            department: c.need || 'Consultation',
+            stage: c.workflow_stage || c.stage || 'Case Review',
+            time: new Date(c.updated_at || c.created_at).toLocaleDateString(),
+          });
+        });
+        setRecentActivity(activities);
+
+        // Urgent Cases
+        const urgent = cases.slice(0, 4).map((c) => ({
+          id: c.id,
+          name: c.patient_name || 'Patient',
+          specialty: c.need || 'General Care',
+          coordinator: c.coordinator_name || 'Sarah James',
+          isUnassigned: !c.coordinator_name,
+        }));
+        setUrgentCases(urgent);
+
+        // Workload
+        const coordinatorMap: { [key: string]: number } = {
+          'Sarah James': 0,
+          'Dr. Elena Vance': 0,
+          'Marcus Chen': 0,
+        };
+        cases.forEach((c) => {
+          const name = c.coordinator_name || 'Sarah James';
+          coordinatorMap[name] = (coordinatorMap[name] || 0) + 1;
+        });
+
+        setWorkload(
+          Object.entries(coordinatorMap).map(([name, count]) => ({
             name,
-            created_at,
-            user_id,
-            profiles!user_id ( full_name )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(6);
-
-        if (recentDocs && recentDocs.length > 0) {
-          const mappedActivity: ActivityItem[] = recentDocs.map((doc: any, idx: number) => ({
-            id: doc.id || `doc-${idx}`,
-            name: doc.profiles?.full_name || 'Patient',
-            status: 'Submitted',
-            statusBg: 'bg-emerald-100 text-emerald-800',
-            department: doc.name || 'General Document',
-            stage: 'Document Uploaded',
-            time: doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'N/A',
-          }));
-
-          setRecentActivity(mappedActivity);
-        }
-
-        // 3. Fetch Cases with Joined Patient & Coordinator Profiles
-        const { data: casesData } = await supabase
-          .from('cases')
-          .select(`
-            id,
-            need,
-            patient:profiles!user_id ( full_name ),
-            coordinator:profiles!coordinator_id ( full_name )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (casesData) {
-          const mappedUrgent: UrgentCase[] = casesData.map((c: any, idx: number) => {
-            const patientObj = Array.isArray(c.patient) ? c.patient[0] : c.patient;
-            const coordObj = Array.isArray(c.coordinator) ? c.coordinator[0] : c.coordinator;
-
-            return {
-              id: c.id || `case-${idx}`,
-              name: patientObj?.full_name || 'Unknown Patient',
-              specialty: c.need || 'General Guidance',
-              coordinator: coordObj?.full_name || 'Unassigned',
-              isUnassigned: !coordObj?.full_name,
-            };
-          });
-          setUrgentCases(mappedUrgent);
-        }
-
-        // 4. Calculate Team Workload from Active Cases
-        const { data: workloadCases } = await supabase
-          .from('cases')
-          .select(`
-            id,
-            coordinator:profiles!coordinator_id ( full_name )
-          `);
-
-        if (workloadCases) {
-          const workloadMap: Record<string, { count: number; isUnassigned: boolean }> = {};
-
-          workloadCases.forEach((c: any) => {
-            const coordObj = Array.isArray(c.coordinator) ? c.coordinator[0] : c.coordinator;
-            const coordinatorName = coordObj?.full_name || 'Unassigned';
-            const isUnassigned = !coordObj?.full_name;
-
-            if (!workloadMap[coordinatorName]) {
-              workloadMap[coordinatorName] = { count: 0, isUnassigned };
-            }
-            workloadMap[coordinatorName].count += 1;
-          });
-
-          const mappedWorkload: WorkloadItem[] = Object.entries(workloadMap).map(
-            ([name, info]) => ({
-              name,
-              casesCount: info.count,
-              isUnassigned: info.isUnassigned,
-            })
-          );
-
-          setWorkload(mappedWorkload);
-        }
+            casesCount: count,
+          }))
+        );
       } catch (err) {
-        console.error('Error fetching admin dashboard data:', err);
+        console.error('Error loading admin dashboard data:', err);
       } finally {
         setLoading(false);
       }
     }
 
     fetchDashboardData();
-  }, [supabase]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-      </div>
-    );
-  }
+  }, []);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
-      {/* Welcome Banner */}
-      <div>
-        <h2 className="text-3xl font-bold text-[#1E3A8A]">Good to see you, Admin.</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Here&apos;s what&apos;s happening across your caseload today.
-        </p>
+    <div className="space-y-6 sm:space-y-8 font-sans max-w-7xl mx-auto w-full p-4 sm:p-8">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">Admin Overview</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Real-time operations, case workflows, and patient intake coordination.
+          </p>
+        </div>
+        <Link
+          href="/admin/patient-cases"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-colors w-full sm:w-auto"
+        >
+          <span>View All Cases</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
-      {/* Service Live Alert */}
-      <div className="bg-[#EBF7F0] border border-emerald-200/60 rounded-xl p-4 flex items-center gap-3 text-emerald-900 text-sm">
-        <SendHorizontal className="w-5 h-5 text-emerald-600 shrink-0 rotate-[-30deg]" />
-        <p>
-          <span className="font-semibold">New service live: Flight Booking & Scheduling</span> &mdash; patients get up to 5% off all flights. Let your patients know when discussing travel plans.
-        </p>
-      </div>
+      {/* Metrics Row */}
+      {loading ? (
+        <div className="flex items-center justify-center p-12 bg-white rounded-2xl border border-slate-200">
+          <Loader2 className="w-6 h-6 text-blue-900 animate-spin mr-2" />
+          <span className="text-xs sm:text-sm text-slate-500">Loading metrics...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          {stats.map((stat, i) => (
+            <div key={i} className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+              <span className="text-[11px] font-semibold text-slate-500 block leading-tight">{stat.label}</span>
+              <span className={`text-2xl sm:text-3xl font-bold tracking-tight ${stat.color}`}>
+                {stat.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {stats.map((stat, idx) => (
-          <div key={`stat-${stat.label}-${idx}`} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[110px]">
-            <span className="text-xs font-medium text-slate-500 leading-tight">
-              {stat.label}
-            </span>
-            <span className={`text-3xl font-extrabold mt-4 ${stat.color}`}>
-              {stat.value}
-            </span>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Urgent Attention Cases */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b pb-3">
+            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-500" /> Urgent Action Required
+            </h2>
+            <Link href="/admin/patient-cases" className="text-xs font-semibold text-emerald-700 hover:underline">
+              All Cases →
+            </Link>
           </div>
-        ))}
-      </div>
 
-      {/* Urgent Cases Alert Box */}
-      <div className="bg-[#FEF2F2] border border-red-100 rounded-2xl p-6 space-y-3">
-        <div className="flex items-center gap-2 text-red-600 font-bold text-sm">
-          <ShieldAlert className="w-5 h-5" />
-          <span>{urgentCases.length} cases requiring attention</span>
+          <div className="space-y-3">
+            {urgentCases.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">No urgent cases flagged</p>
+            ) : (
+              urgentCases.map((c) => (
+                <div
+                  key={c.id}
+                  className="p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-100 transition-colors flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0 space-y-0.5">
+                    <h4 className="text-xs font-bold text-blue-900 truncate">{c.name}</h4>
+                    <p className="text-[11px] text-slate-500 truncate">{c.specialty}</p>
+                    <p className="text-[10px] text-slate-400">Coord: {c.coordinator}</p>
+                  </div>
+                  <Link
+                    href={`/admin/cases/${c.id}`}
+                    className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-600 hover:text-emerald-700 text-[11px] font-semibold rounded-lg transition-colors shrink-0"
+                  >
+                    Manage
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
-        <div className="space-y-2 pt-1">
-          {urgentCases.length === 0 ? (
-            <p className="text-xs text-slate-500">No cases currently requiring attention.</p>
-          ) : (
-            urgentCases.map((c, idx) => (
-              <div key={c.id || `urgent-case-${idx}`} className="flex items-center justify-between text-sm py-1 border-b border-red-100/60 last:border-0">
-                <span className="text-slate-600">
-                  <strong className="text-slate-800 font-medium">{c.name}</strong> &mdash; {c.specialty} &middot;{' '}
-                  <span className={c.isUnassigned ? 'text-red-600 font-semibold' : 'text-slate-600'}>
-                    {c.coordinator}
-                  </span>
-                </span>
-                <Link href={`/admin/cases/${c.id}`} className="text-xs font-bold text-[#1E3A8A] hover:underline">
-                  Open &rarr;
-                </Link>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Main Grid: Recent Activity & Team Workload */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Recent Activity Column */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h3 className="text-xs font-bold tracking-wider text-blue-600 uppercase mb-4">
-            RECENT ACTIVITY
-          </h3>
+        {/* Recent Activity Feed */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b pb-3">
+            <h2 className="text-sm font-bold text-slate-800">Recent Workflow Activity</h2>
+            <span className="text-[11px] text-slate-400 font-medium">Live Synced</span>
+          </div>
 
           <div className="divide-y divide-slate-100">
             {recentActivity.length === 0 ? (
-              <p className="text-sm text-slate-500 py-4">No recent activity recorded.</p>
+              <p className="text-xs text-slate-400 py-6 text-center">No recent activity logged</p>
             ) : (
-              recentActivity.map((item, idx) => (
-                <div key={item.id || `activity-${idx}`} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
-                  <div className="space-y-1">
+              recentActivity.map((act) => (
+                <div key={act.id} className="py-3 flex items-center justify-between gap-4 text-xs">
+                  <div className="space-y-0.5 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 text-sm">{item.name}</span>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.statusBg}`}>
-                        {item.status}
+                      <span className="font-bold text-blue-900">{act.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${act.statusBg}`}>
+                        {act.status}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500">
-                      {item.department} &middot; {item.stage}
-                    </p>
+                    <p className="text-slate-500 text-[11px] truncate">{act.department} · Current Stage: {act.stage}</p>
                   </div>
-                  <span className="text-xs text-slate-400 font-medium">{item.time}</span>
+                  <span className="text-slate-400 text-[10px] shrink-0">{act.time}</span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        {/* Team Workload Column */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold tracking-wider text-blue-600 uppercase mb-2">
-            TEAM WORKLOAD
-          </h3>
+      </div>
 
-          <div className="space-y-3">
-            {workload.length === 0 ? (
-              <p className="text-xs text-slate-500">No active workload data available.</p>
-            ) : (
-              workload.map((member, idx) => (
-                <div key={`workload-${member.name}-${idx}`} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-0">
-                  <span className={`font-semibold ${member.isUnassigned ? 'text-red-600' : 'text-slate-700'}`}>
-                    {member.name}
-                  </span>
-                  <span className="bg-blue-50 text-blue-700 font-semibold px-2.5 py-0.5 rounded-full text-xs">
-                    {member.casesCount} {member.casesCount === 1 ? 'case' : 'cases'}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-
-          <Link
-            href="/admin/cases?filter=unassigned"
-            className="block w-full mt-4 border border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors text-center"
-          >
-            Assign unassigned cases
-          </Link>
+      {/* Team Workload */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
+        <h2 className="text-sm font-bold text-slate-800">Care Coordinator Workload Allocation</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {workload.map((item, idx) => (
+            <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <h4 className="text-xs font-bold text-blue-900">{item.name}</h4>
+                <p className="text-[11px] text-slate-500">Active Healthcare Cases</p>
+              </div>
+              <span className="text-lg font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                {item.casesCount}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

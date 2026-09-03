@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "User": {
+      "collection": "users",
+      "fields": {
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "country": { "type": "string" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "Case": {
+      "collection": "cases",
+      "fields": {
+        "caseNumber": { "type": "string" },
+        "userId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "patientEmail": { "type": "string" },
+        "patientPhone": { "type": "string" },
+        "need": { "type": "string" },
+        "situation": { "type": "string" },
+        "stage": { "type": "string" },
+        "workflowStage": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
+        "coordinatorId": { "type": "string" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "Document": {
+      "collection": "documents",
+      "fields": {
+        "caseId": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      }
+    },
+    "TreatmentUpdate": {
+      "collection": "treatment_updates",
+      "fields": {
+        "caseId": { "type": "string" },
+        "title": { "type": "string" },
+        "notes": { "type": "string" },
+        "date": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      }
+    }
+  }
+}

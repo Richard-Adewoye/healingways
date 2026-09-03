@@ -1,12 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Adjust these import paths to wherever your step components actually
-// live. Based on how the existing codebase imports StepSevenSuccess
-// (`./_components/stepSevenSuccess`), this assumes all step files sit in
-// a sibling `_components` folder next to this page.tsx.
 import StepOneAboutYou from './_components/stepOne';
 import StepTwoYourSituation from './_components/stepTwo';
 import StepThreeMedicalDetails from './_components/stepThree';
@@ -15,16 +11,16 @@ import StepFivePreferences from './_components/stepFive';
 import StepSixConsent, { ReviewData } from './_components/stepSix';
 import StepSevenSuccess from './_components/stepSevenSuccess';
 
-// Everything collected across steps 1-5. Each step only writes its own
-// slice — nothing here is a database concern, it's just what's needed to
-// render Step 6's review screen and pass a name into the success screen.
 interface ConsultationFormState {
   aboutYou?: {
     consultationFor?: string;
     fullName?: string;
+    patientName?: string;
     email?: string;
     phone?: string;
     country?: string;
+    password?: string;
+    userId?: string;
   };
   situation?: {
     supportType?: string;
@@ -44,67 +40,141 @@ interface ConsultationFormState {
   };
 }
 
+const STORAGE_KEY = 'hw_consultation_form_data';
+const STEP_KEY = 'hw_consultation_current_step';
+const CASE_KEY = 'hw_consultation_case_id';
+
 export default function ConsultationPage() {
   const router = useRouter();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ConsultationFormState>({});
-
-  // Set once Step 2 creates the `cases` row; every later step needs it to
-  // know which case to update.
   const [caseId, setCaseId] = useState<string | undefined>(undefined);
   const [submittedCaseId, setSubmittedCaseId] = useState<string>('');
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const goBack = () => setCurrentStep((step) => Math.max(1, step - 1));
-  const goToStep = (step: number) => setCurrentStep(step);
+  // Restore saved progress on mount
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      const savedStep = localStorage.getItem(STEP_KEY);
+      const savedCaseId = localStorage.getItem(CASE_KEY);
+
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        setFormData(parsed);
+      }
+      if (savedStep) {
+        const stepNum = parseInt(savedStep, 10);
+        if (stepNum >= 1 && stepNum <= 7) {
+          setCurrentStep(stepNum);
+        }
+      }
+      if (savedCaseId) {
+        setCaseId(savedCaseId);
+      }
+    } catch (e) {
+      console.warn('Could not restore consultation state from storage', e);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // Save progress changes
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+      localStorage.setItem(STEP_KEY, currentStep.toString());
+      if (caseId) {
+        localStorage.setItem(CASE_KEY, caseId);
+      }
+    } catch (e) {
+      console.warn('Could not persist consultation state', e);
+    }
+  }, [formData, currentStep, caseId, isLoaded]);
+
+  const goBack = () => {
+    setCurrentStep((step) => {
+      const newStep = Math.max(1, step - 1);
+      localStorage.setItem(STEP_KEY, newStep.toString());
+      return newStep;
+    });
+  };
+
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+    localStorage.setItem(STEP_KEY, step.toString());
+  };
 
   const handleStepOneNext = (data: any) => {
-    setFormData((prev) => ({ ...prev, aboutYou: data }));
+    const updated = { ...formData, aboutYou: data };
+    setFormData(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(2);
+    localStorage.setItem(STEP_KEY, '2');
   };
 
   const handleStepTwoNext = (data: any) => {
-    setFormData((prev) => ({ ...prev, situation: data }));
-    if (data.caseId) setCaseId(data.caseId);
+    const updated = { ...formData, situation: data };
+    setFormData(updated);
+    if (data.caseId) {
+      setCaseId(data.caseId);
+      localStorage.setItem(CASE_KEY, data.caseId);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(3);
+    localStorage.setItem(STEP_KEY, '3');
   };
 
   const handleStepThreeNext = (data: any) => {
-    setFormData((prev) => ({ ...prev, medicalDetails: data }));
+    const updated = { ...formData, medicalDetails: data };
+    setFormData(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(4);
+    localStorage.setItem(STEP_KEY, '4');
   };
 
   const handleStepFourNext = (data: any) => {
-    setFormData((prev) => ({ ...prev, documentsUploaded: data.documentsUploaded || [] }));
+    const updated = { ...formData, documentsUploaded: data.documentsUploaded || [] };
+    setFormData(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(5);
+    localStorage.setItem(STEP_KEY, '5');
   };
 
   const handleStepFiveNext = (data: any) => {
-    setFormData((prev) => ({ ...prev, preferences: data }));
+    const updated = { ...formData, preferences: data };
+    setFormData(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(6);
+    localStorage.setItem(STEP_KEY, '6');
   };
 
   const handleStepSixSubmit = () => {
-    setSubmittedCaseId(caseId || '');
+    const finalCaseId = caseId || localStorage.getItem(CASE_KEY) || '';
+    setSubmittedCaseId(finalCaseId);
     setCurrentStep(7);
+    localStorage.setItem(STEP_KEY, '7');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STEP_KEY);
+    } catch {}
   };
 
   if (currentStep === 7) {
     return (
       <StepSevenSuccess
         userName={formData.aboutYou?.fullName}
-        caseId={submittedCaseId}
+        caseId={submittedCaseId || caseId}
         onGoHome={() => router.push('/')}
       />
     );
   }
 
-  // Built fresh on every render from whatever's been collected so far —
-  // Step 6 only reads it once the user reaches that step, by which point
-  // every earlier field will be populated.
   const reviewData: ReviewData = {
     aboutYou: {
-      consultationFor: formData.aboutYou?.consultationFor,
+      consultationFor: formData.aboutYou?.consultationFor || 'Myself',
       fullName: formData.aboutYou?.fullName,
       email: formData.aboutYou?.email,
       phone: formData.aboutYou?.phone,
@@ -139,6 +209,7 @@ export default function ConsultationPage() {
           onNext={handleStepTwoNext}
           onBack={goBack}
           initialData={formData.situation}
+          aboutYou={formData.aboutYou}
           caseId={caseId}
         />
       );

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check } from 'lucide-react';
-import { createClient } from '../../utils/supabase/client';
+import { auth } from '@/app/lib/firebase/client';
+import { createPatientCase, updatePatientCase } from '@/app/lib/firebase/services';
 
 const STEPS = [
   { id: 1, label: 'About You' },
@@ -38,25 +38,33 @@ interface StepTwoProps {
   onNext?: (data: any) => void;
   onBack?: () => void;
   initialData?: any;
-  caseId?: string; // Optional if passing an existing case draft ID
+  aboutYou?: any;
+  caseId?: string;
 }
 
 export default function StepTwoYourSituation({
   onNext,
   onBack,
   initialData = {},
+  aboutYou = {},
   caseId,
 }: StepTwoProps) {
-  const supabase = createClient();
-
   const [formData, setFormData] = useState({
     supportType: initialData.supportType || 'Finding the right hospital or specialist',
-    healthcareArea: initialData.healthcareArea || '',
+    healthcareArea: initialData.healthcareArea || 'Orthopedics',
     situationDescription: initialData.situationDescription || '',
   });
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSupportTypeSelect = (type: string) => {
+    setFormData((prev) => ({ ...prev, supportType: type }));
+  };
+
+  const handleHealthcareAreaSelect = (area: string) => {
+    setFormData((prev) => ({ ...prev, healthcareArea: area }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,41 +72,53 @@ export default function StepTwoYourSituation({
     setLoading(true);
 
     try {
-      // 1. Check authenticated user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error('User authentication lost. Please restart step 1.');
+      const user = auth.currentUser;
+      const effectiveUserId = user?.uid || aboutYou?.userId || `patient_${Date.now()}`;
+      let activeCaseId = caseId;
+
+      if (activeCaseId) {
+        await updatePatientCase(activeCaseId, {
+          support_type: formData.supportType,
+          healthcare_area: formData.healthcareArea,
+          need: formData.healthcareArea || formData.supportType || 'Medical Consultation',
+          situation_description: formData.situationDescription,
+          situation: formData.situationDescription,
+          consultation_for: aboutYou?.consultationFor || 'Myself',
+          patient_name: aboutYou?.patientName || aboutYou?.fullName || user?.displayName || 'Patient',
+          contact_name: aboutYou?.fullName || user?.displayName || '',
+          patient_email: aboutYou?.email || user?.email || '',
+          patient_phone: aboutYou?.phone || '',
+          country: aboutYou?.country || '',
+        });
+      } else {
+        const newCase = await createPatientCase({
+          user_id: effectiveUserId,
+          consultation_for: aboutYou?.consultationFor || 'Myself',
+          patient_name: aboutYou?.patientName || aboutYou?.fullName || user?.displayName || user?.email?.split('@')[0] || 'Patient',
+          contact_name: aboutYou?.fullName || user?.displayName || '',
+          patient_email: aboutYou?.email || user?.email || '',
+          patient_phone: aboutYou?.phone || '',
+          country: aboutYou?.country || '',
+          support_type: formData.supportType,
+          healthcare_area: formData.healthcareArea,
+          need: formData.healthcareArea || formData.supportType || 'Medical Consultation',
+          situation_description: formData.situationDescription,
+          situation: formData.situationDescription,
+          stage: 'Consultation Submitted',
+          workflow_stage: 'Consultation Submitted',
+          status: 'New',
+        });
+        activeCaseId = newCase.id;
       }
 
-      // 2. Persist step data to Supabase (upsert active case draft).
-      // Note: `status` is intentionally left unset here — it stays on its
-      // enum default ('New'). Whether this case is a finished submission
-      // vs. an abandoned draft is tracked by `submitted_at` (set in Step 6),
-      // not by a separate 'draft' status value that isn't part of the enum.
-      const { data: caseData, error: dbError } = await supabase
-        .from('cases')
-        .upsert({
-          ...(caseId ? { id: caseId } : { case_number: `CASE-${Date.now().toString(36).toUpperCase()}` }),
-          user_id: user.id,
-          support_type: formData.supportType,
-          healthcare_area: formData.healthcareArea || null,
-          need: formData.healthcareArea || 'General Guidance',
-          situation_description: formData.situationDescription,
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      // 3. Move to next step with updated payload
       if (onNext) {
         onNext({
           ...formData,
-          caseId: caseData.id,
+          caseId: activeCaseId,
         });
       }
     } catch (err: any) {
+      console.error('Error in Step 2:', err);
       setErrorMsg(err.message || 'Failed to save your details. Please try again.');
     } finally {
       setLoading(false);
@@ -113,10 +133,10 @@ export default function StepTwoYourSituation({
           Start Your Healthcare Journey
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
-          Let's understand how we can support you.
+          Tell us about your medical situation.
         </h1>
         <p className="text-slate-500 text-sm sm:text-base max-w-xl mx-auto">
-          Every healthcare journey is different. Share some details, and our team will review your needs and guide you toward next steps. Takes about 5 minutes.
+          Help our clinical coordinators understand the specific care or treatment support you are seeking.
         </p>
 
         {/* Stepper Header Bar */}
@@ -125,25 +145,24 @@ export default function StepTwoYourSituation({
             <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0" />
 
             {STEPS.map((step) => {
-              const isCompleted = step.id < 2;
               const isActive = step.id === 2;
-
+              const isPast = step.id < 2;
               return (
                 <div key={step.id} className="relative z-10 flex flex-col items-center group">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      isCompleted
-                        ? 'bg-emerald-600 text-white'
-                        : isActive
+                      isActive
                         ? 'border-2 border-emerald-600 bg-white text-emerald-700 ring-4 ring-emerald-50'
+                        : isPast
+                        ? 'bg-emerald-600 text-white'
                         : 'border border-slate-300 bg-white text-slate-500'
                     }`}
                   >
-                    {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : step.id}
+                    {step.id}
                   </div>
                   <span
                     className={`mt-2 text-xs font-medium whitespace-nowrap hidden sm:block ${
-                      isActive ? 'text-emerald-700 font-bold' : isCompleted ? 'text-slate-800' : 'text-slate-500'
+                      isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'
                     }`}
                   >
                     {step.label}
@@ -155,95 +174,126 @@ export default function StepTwoYourSituation({
         </div>
       </div>
 
-      {/* Form Content Card */}
-      <div className="max-w-2xl mx-auto space-y-6">
-        {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs font-medium text-center">
-            {errorMsg}
-          </div>
-        )}
+      {/* Main Form Card */}
+      <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-10 mt-2">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {errorMsg && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+              {errorMsg}
+            </div>
+          )}
 
-        <form id="step-two-form" onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-          
-          {/* Support Type Selection */}
-          <div className="space-y-3">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-              What kind of healthcare support are you looking for? <span className="text-red-500">*</span>
+          {/* Primary Need / Support Type */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              What kind of support are you looking for? <span className="text-emerald-600">*</span>
             </label>
-            <div className="flex flex-wrap gap-2.5">
-              {SUPPORT_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, supportType: type }))}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all border text-left ${
-                    formData.supportType === type
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
+            <div className="space-y-2">
+              {SUPPORT_TYPES.map((type) => {
+                const isSelected = formData.supportType === type;
+                return (
+                  <button
+                    type="button"
+                    key={type}
+                    onClick={() => handleSupportTypeSelect(type)}
+                    className={`w-full p-3.5 text-xs sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-semibold shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>{type}</span>
+                    <div
+                      className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? 'border-emerald-600 bg-emerald-600 text-white'
+                          : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Area of healthcare need */}
-          <div className="space-y-1.5 pt-2">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Area of healthcare need
+          {/* Healthcare Specialty Area */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Healthcare / Specialty Area <span className="text-emerald-600">*</span>
             </label>
-            <select
-              name="healthcareArea"
-              value={formData.healthcareArea}
-              onChange={(e) => setFormData((prev) => ({ ...prev, healthcareArea: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800"
-            >
-              <option value="">Select if known</option>
-              {HEALTHCARE_AREAS.map((area) => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
+            <div className="grid grid-cols-2 gap-2.5">
+              {HEALTHCARE_AREAS.map((area) => {
+                const isSelected = formData.healthcareArea === area;
+                return (
+                  <button
+                    type="button"
+                    key={area}
+                    onClick={() => handleHealthcareAreaSelect(area)}
+                    className={`p-3 text-xs sm:text-sm font-medium rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-semibold shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>{area}</span>
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? 'border-emerald-600 bg-emerald-600 text-white'
+                          : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      {isSelected && <span className="w-1 h-1 rounded-full bg-white" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Situation Description Textarea */}
-          <div className="space-y-1.5 pt-2">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Tell us about your healthcare situation <span className="text-red-500">*</span>
+          {/* Description of situation */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Describe your current symptoms or diagnosis in your own words
             </label>
-            <p className="text-xs text-slate-500">
-              Share what you're experiencing, your diagnosis if available, and what support you're looking for.
-            </p>
             <textarea
               rows={4}
-              required
               value={formData.situationDescription}
               onChange={(e) => setFormData((prev) => ({ ...prev, situationDescription: e.target.value }))}
-              placeholder="Please describe your situation..."
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 placeholder:text-slate-400 text-slate-800 resize-y"
+              placeholder="e.g. Diagnosed with knee arthritis, seeking second opinion and surgical cost estimate..."
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
-        </form>
 
-        {/* Navigation Buttons Row */}
-        <div className="flex items-center justify-between pt-2">
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={loading}
-            className="text-sm font-bold text-blue-900 hover:text-blue-700 disabled:opacity-50 transition-colors flex items-center gap-1"
-          >
-            ← Back
-          </button>
-          <button
-            type="submit"
-            form="step-two-form"
-            disabled={loading}
-            className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-sm rounded-lg transition-colors shadow-sm"
-          >
-            {loading ? 'Saving...' : 'Continue'}
-          </button>
-        </div>
+          {/* Action Buttons */}
+          <div className="pt-4 flex items-center justify-between gap-4">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="px-6 py-3.5 border border-slate-200 text-slate-600 font-semibold text-sm rounded-xl hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                Back
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving Details...
+                </>
+              ) : (
+                'Continue to Step 3 (Medical Details)'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

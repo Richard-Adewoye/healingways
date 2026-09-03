@@ -14,7 +14,7 @@ export default function HospitalsHero() {
             Connecting patients with trusted healthcare institutions worldwide.
           </h1>
           <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-            We carefully consider each patient's needs before recommending suitable healthcare providers — this page showcases our network, it isn't a directory to book from directly.
+            We carefully consider each patient&apos;s needs before recommending suitable healthcare providers — this page showcases our network, it isn&apos;t a directory to book from directly.
           </p>
         </div>
       </div>
