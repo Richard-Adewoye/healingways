@@ -73,6 +73,8 @@ export default function StepThreeMedicalDetails({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('handleSubmit (Step 3) called, formData:', formData);
     setErrorMsg(null);
     setLoading(true);
 

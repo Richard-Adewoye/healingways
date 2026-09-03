@@ -122,6 +122,7 @@ export default function ConsultationPage() {
   };
 
   const handleStepTwoNext = (data: any) => {
+    console.log('handleStepTwoNext called with data:', data);
     const updated = { ...formData, situation: data };
     setFormData(updated);
     if (data.caseId) {

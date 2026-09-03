@@ -96,6 +96,8 @@ export default function StepFivePreferences({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('handleSubmit (Step 5) called, formData:', formData);
     setErrorMsg(null);
     setLoading(true);
 

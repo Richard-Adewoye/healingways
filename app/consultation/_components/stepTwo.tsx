@@ -96,6 +96,8 @@ export default function StepTwoYourSituation({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('handleSubmit called, formData:', formData);
     setErrorMsg(null);
     setLoading(true);
 

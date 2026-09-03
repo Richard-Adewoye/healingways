@@ -51,6 +51,8 @@ export default function StepFourDocuments({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('handleSubmit (Step 4) called');
     setErrorMsg(null);
     setLoading(true);
 

@@ -99,6 +99,8 @@ export default function StepSixConsent({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('handleSubmit (Step 6) called');
     if (isSubmitDisabled) return;
 
     setErrorMsg(null);
