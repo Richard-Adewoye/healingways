@@ -93,18 +93,18 @@ export default function StepSevenSuccess({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 relative z-50">
           <Link
-            href="/dashboard"
+            href="/signup?from=consultation"
             className="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Open Patient Portal</span>
+            <span>Create Patient Account</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
-            href="/login"
+            href="/"
             className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogIn className="w-4 h-4" />
-            <span>Sign In to Account</span>
+            <span>Return to Home</span>
           </Link>
         </div>
       </div>

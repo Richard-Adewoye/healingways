@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
-import { registerUser } from '@/app/lib/firebase/services';
+import { registerUser, loginUser, getUserActiveCase } from '@/app/lib/firebase/services';
 
 function RegisterForm() {
   const router = useRouter();
@@ -192,6 +192,13 @@ function RegisterForm() {
       });
 
       if (res.success && res.user) {
+        // Link any unassigned consultation case to this new user account
+        try {
+          await getUserActiveCase(res.user.uid, res.user.email);
+        } catch (linkErr) {
+          console.warn('Failed to link active case:', linkErr);
+        }
+
         // Clear draft session storage upon successful registration
         try {
           sessionStorage.removeItem('hw_signup_draft_fullname');

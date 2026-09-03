@@ -28,7 +28,7 @@ export default function MyCasesPage() {
         <div>
           <h2 className="text-2xl font-bold text-blue-900">My Cases</h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Every healthcare journey you've started with HealingWays.
+            Every healthcare journey you&apos;ve started with HealingWays.
           </p>
         </div>
         <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors self-start sm:self-auto">

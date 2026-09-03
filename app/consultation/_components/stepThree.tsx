@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { updatePatientCase } from '@/app/lib/firebase/services';
 
 const STEPS = [
@@ -22,9 +22,18 @@ const TREATMENT_STATUSES = [
 ];
 
 interface StepThreeProps {
-  onNext?: (data: any) => void;
+  onNext?: (data: {
+    hasDiagnosis: string;
+    diagnosis: string;
+    treatmentStatus: string;
+    caseId?: string;
+  }) => void;
   onBack?: () => void;
-  initialData?: any;
+  initialData?: {
+    hasDiagnosis?: string;
+    diagnosis?: string;
+    treatmentStatus?: string;
+  };
   caseId?: string;
 }
 
@@ -39,6 +48,17 @@ export default function StepThreeMedicalDetails({
     diagnosis: initialData.diagnosis || '',
     treatmentStatus: initialData.treatmentStatus || 'Not started treatment',
   });
+
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        hasDiagnosis: initialData.hasDiagnosis || prev.hasDiagnosis || 'Yes',
+        diagnosis: initialData.diagnosis ?? prev.diagnosis ?? '',
+        treatmentStatus: initialData.treatmentStatus || prev.treatmentStatus || 'Not started treatment',
+      }));
+    }
+  }, [initialData]);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -174,7 +194,7 @@ export default function StepThreeMedicalDetails({
               value={formData.diagnosis}
               onChange={(e) => setFormData((prev) => ({ ...prev, diagnosis: e.target.value }))}
               placeholder="e.g. Stage 2 Breast Cancer, Lumbar Herniation, Knee Osteoarthritis"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 

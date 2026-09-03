@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Bed, 
@@ -8,11 +8,8 @@ import {
   CheckCircle2, 
   Lock, 
   FileCheck,
-  Building2,
-  FileText,
   ArrowRight,
   ShieldCheck,
-  Plane,
   XCircle,
   Clock,
   AlertCircle
@@ -38,9 +35,7 @@ export default function AccommodationPage() {
   const [declineReason, setDeclineReason] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-
+  const reloadData = async () => {
     try {
       const stored = getStoredUser();
       const user = auth.currentUser;
@@ -53,17 +48,45 @@ export default function AccommodationPage() {
       const access = checkStepAccess(5, c);
       if (!access.allowed) {
         setAccessReason(access.reason || 'This step is locked.');
+      } else {
+        setAccessReason(null);
       }
     } catch (err) {
       console.error('Error loading accommodation & visa details:', err);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let isMounted = true;
+    async function init() {
+      try {
+        const stored = getStoredUser();
+        const user = auth.currentUser;
+        const uid = user?.uid || stored?.uid || null;
+        const email = user?.email || stored?.email || null;
+        const c = await getUserActiveCase(uid, email);
+        if (!isMounted) return;
+        setActiveCase(c);
+        
+        const { checkStepAccess } = await import('@/app/lib/firebase/services');
+        const access = checkStepAccess(5, c);
+        if (!access.allowed) {
+          setAccessReason(access.reason || 'This step is locked.');
+        }
+      } catch (err) {
+        console.error('Error loading accommodation & visa details:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleConfirm = async () => {
     if (!activeCase) return;
@@ -71,9 +94,10 @@ export default function AccommodationPage() {
     setErrorMsg(null);
     try {
       await patientConfirmAccommodationAndVisa(activeCase.id);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error confirming accommodation and visa details.');
+      await reloadData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Error confirming accommodation and visa details.');
     } finally {
       setConfirming(false);
     }
@@ -88,9 +112,10 @@ export default function AccommodationPage() {
       await patientDeclineAccommodationAndVisa(activeCase.id, declineReason.trim());
       setDeclineReason('');
       setShowDeclineForm(false);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit request.');
+      await reloadData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Failed to submit request.');
     } finally {
       setDeclining(false);
     }

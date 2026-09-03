@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Check, ShieldCheck, User, Users, Heart, Baby } from 'lucide-react';
-import { saveUserProfile, registerUser, loginUser } from '@/app/lib/firebase/services';
+import { Check, User, Users, Heart, Baby } from 'lucide-react';
+import { saveUserProfile } from '@/app/lib/firebase/services';
 
 const STEPS = [
   { id: 1, label: 'About You' },
@@ -45,8 +45,24 @@ const PATIENT_RELATION_OPTIONS = [
 ];
 
 interface StepOneProps {
-  onNext?: (data: any) => void;
-  initialData?: any;
+  onNext?: (data: {
+    consultationFor: string;
+    fullName: string;
+    patientName: string;
+    email: string;
+    phone: string;
+    country: string;
+    userId: string;
+  }) => void;
+  initialData?: {
+    consultationFor?: string;
+    fullName?: string;
+    patientName?: string;
+    email?: string;
+    phone?: string;
+    country?: string;
+    userId?: string;
+  };
 }
 
 export default function StepOneAboutYou({ onNext, initialData = {} }: StepOneProps) {
@@ -57,9 +73,21 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     country: initialData?.country || '',
-    password: initialData?.password || '',
-    confirmPassword: initialData?.confirmPassword || '',
   });
+
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        consultationFor: initialData.consultationFor || prev.consultationFor || 'Myself',
+        fullName: initialData.fullName || prev.fullName || '',
+        patientName: initialData.patientName || prev.patientName || '',
+        email: initialData.email || prev.email || '',
+        phone: initialData.phone || prev.phone || '',
+        country: initialData.country || prev.country || '',
+      }));
+    }
+  }, [initialData]);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -76,6 +104,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('handleSubmit called, formData:', formData);
     setErrorMsg(null);
 
     // Validate email
@@ -100,51 +129,11 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
       return;
     }
 
-    // Password validation - mandatory account creation with consultation
-    if (!formData.password) {
-      setErrorMsg('Please create an account password (at least 6 characters).');
-      return;
-    }
-    if (formData.password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters long.');
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setErrorMsg('Passwords do not match. Please verify both password entries.');
-      return;
-    }
-
     setLoading(true);
 
     try {
       let resolvedUserId = '';
-      
-      const res = await registerUser({
-        email: cleanEmail,
-        password: formData.password,
-        fullName: formData.fullName,
-        phone: formData.phone,
-        role: 'patient',
-      });
-      
-      if (!res.success) {
-        if (res.reason === 'email_already_in_use') {
-          // Attempt login if email is already in use
-          const loginRes = await loginUser(cleanEmail, formData.password);
-          if (!loginRes.success) {
-             setErrorMsg(loginRes.error || 'Account exists but password incorrect.');
-             setLoading(false);
-             return;
-          }
-          resolvedUserId = loginRes.user?.uid || '';
-        } else {
-          setErrorMsg(res.error || 'Failed to create account.');
-          setLoading(false);
-          return;
-        }
-      } else {
-        resolvedUserId = res.user?.uid || '';
-      }
+      resolvedUserId = `patient_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
       // Save additional profile fields into Firestore & storage if needed
       try {
@@ -307,7 +296,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
                 value={formData.patientName}
                 onChange={handleChange}
                 placeholder="e.g. John Doe"
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
               />
             </div>
           )}
@@ -325,7 +314,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.fullName}
               onChange={handleChange}
               placeholder="e.g. Eleanor Vance"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
@@ -341,7 +330,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.email}
               onChange={handleChange}
               placeholder="eleanor.vance@example.com"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
@@ -357,7 +346,7 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.phone}
               onChange={handleChange}
               placeholder="+1 (555) 234-5678"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
@@ -373,53 +362,17 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
               value={formData.country}
               onChange={handleChange}
               placeholder="e.g. United States, United Kingdom, Canada"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 
-          {/* Account Password (Mandatory Account Creation) */}
-          <div className="space-y-3 pt-4 border-t border-slate-100">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <label className="block text-sm font-semibold text-slate-800">
-                Create Account Password <span className="text-emerald-600">*</span>
-              </label>
-              <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
-                Used to log in to your Journey Dashboard
-              </span>
-            </div>
-            <p className="text-xsss text-slate-500">
-              Your patient account will be created with this password, securing your medical records and allowing you to track each step of your healthcare journey.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Password (min 6 chars) *"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm password *"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-          </div>
+
 
           {/* Submit Action */}
           <div className="pt-4">
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={loading}
               className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >

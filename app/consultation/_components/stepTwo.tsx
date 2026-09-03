@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth } from '@/app/lib/firebase/client';
 import { createPatientCase, updatePatientCase } from '@/app/lib/firebase/services';
 
@@ -35,10 +35,27 @@ const HEALTHCARE_AREAS = [
 ];
 
 interface StepTwoProps {
-  onNext?: (data: any) => void;
+  onNext?: (data: {
+    supportType: string;
+    healthcareArea: string;
+    situationDescription: string;
+    caseId?: string;
+  }) => void;
   onBack?: () => void;
-  initialData?: any;
-  aboutYou?: any;
+  initialData?: {
+    supportType?: string;
+    healthcareArea?: string;
+    situationDescription?: string;
+  };
+  aboutYou?: {
+    consultationFor?: string;
+    fullName?: string;
+    patientName?: string;
+    email?: string;
+    phone?: string;
+    country?: string;
+    userId?: string;
+  };
   caseId?: string;
 }
 
@@ -54,6 +71,17 @@ export default function StepTwoYourSituation({
     healthcareArea: initialData.healthcareArea || 'Orthopedics',
     situationDescription: initialData.situationDescription || '',
   });
+
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        supportType: initialData.supportType || prev.supportType || 'Finding the right hospital or specialist',
+        healthcareArea: initialData.healthcareArea || prev.healthcareArea || 'Orthopedics',
+        situationDescription: initialData.situationDescription ?? prev.situationDescription ?? '',
+      }));
+    }
+  }, [initialData]);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -263,7 +291,7 @@ export default function StepTwoYourSituation({
               value={formData.situationDescription}
               onChange={(e) => setFormData((prev) => ({ ...prev, situationDescription: e.target.value }))}
               placeholder="e.g. Diagnosed with knee arthritis, seeking second opinion and surgical cost estimate..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
             />
           </div>
 

@@ -1,11 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
-  Bell, 
-  Plus, 
-  Send, 
   ArrowRight,
   Loader2,
   CheckCircle2,
@@ -13,7 +10,6 @@ import {
   Lock,
   Luggage,
   ShieldCheck,
-  Check,
   XCircle,
   AlertCircle,
   Clock
@@ -46,9 +42,7 @@ export default function TravelPreparationPage() {
     insurance: true,
   });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-
+  const loadCaseData = async () => {
     try {
       const stored = getStoredUser();
       const user = auth.currentUser;
@@ -61,17 +55,45 @@ export default function TravelPreparationPage() {
       const access = checkStepAccess(6, c);
       if (!access.allowed) {
         setAccessReason(access.reason || 'This step is locked.');
+      } else {
+        setAccessReason(null);
       }
     } catch (err) {
       console.error('Error loading travel preparation:', err);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let isMounted = true;
+    async function init() {
+      try {
+        const stored = getStoredUser();
+        const user = auth.currentUser;
+        const uid = user?.uid || stored?.uid || null;
+        const email = user?.email || stored?.email || null;
+        const c = await getUserActiveCase(uid, email);
+        if (!isMounted) return;
+        setActiveCase(c);
+        
+        const { checkStepAccess } = await import('@/app/lib/firebase/services');
+        const access = checkStepAccess(6, c);
+        if (!access.allowed) {
+          setAccessReason(access.reason || 'This step is locked.');
+        }
+      } catch (err) {
+        console.error('Error initializing travel preparation:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleConfirm = async () => {
     if (!activeCase) return;
@@ -79,9 +101,10 @@ export default function TravelPreparationPage() {
     setErrorMsg(null);
     try {
       await patientConfirmTravel(activeCase.id);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error confirming travel plan.');
+      await loadCaseData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Error confirming travel plan.');
     } finally {
       setConfirming(false);
     }
@@ -96,9 +119,10 @@ export default function TravelPreparationPage() {
       await patientDeclineTravel(activeCase.id, declineReason.trim());
       setDeclineReason('');
       setShowDeclineForm(false);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit request.');
+      await loadCaseData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Failed to submit request.');
     } finally {
       setDeclining(false);
     }

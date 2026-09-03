@@ -35,7 +35,7 @@ export default function ContactHero() {
             Contact HealingWays
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-900 leading-tight">
-            We're here to help you find<br /> the right path to care.
+            We&apos;re here to help you find<br /> the right path to care.
           </h1>
           <p className="text-sm sm:text-base text-gray-600 max-w-2xl">
             Whether you have questions, need guidance, or are ready to begin — our team is available to listen and support you.

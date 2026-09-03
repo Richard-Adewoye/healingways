@@ -1,19 +1,13 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
-  Bell, 
-  Plus, 
-  Send, 
-  ArrowRight,
   Loader2,
   HeartPulse,
   Calendar,
-  CheckCircle2,
   Lock,
-  Activity,
-  UserCheck
+  Activity
 } from 'lucide-react';
 import { auth } from '@/app/lib/firebase/client';
 import { 
@@ -31,50 +25,56 @@ export default function TreatmentRecoveryPage() {
   const [updates, setUpdates] = useState<TreatmentUpdate[]>([]);
   const [accessReason, setAccessReason] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const stored = getStoredUser();
+        const user = auth.currentUser;
+        const uid = user?.uid || stored?.uid || null;
+        const email = user?.email || stored?.email || null;
+        const c = await getUserActiveCase(uid, email);
+        if (!isMounted) return;
 
-    try {
-      const stored = getStoredUser();
-      const user = auth.currentUser;
-      const uid = user?.uid || stored?.uid || null;
-      const email = user?.email || stored?.email || null;
-      const c = await getUserActiveCase(uid, email);
-      if (c) {
-        setActiveCase(c);
-        const upds = await getTreatmentUpdatesForCase(c.id);
-        if (upds.length > 0) {
-          setUpdates(upds);
-        } else if (c.treatment_updates && c.treatment_updates.length > 0) {
-          setUpdates(c.treatment_updates);
+        if (c) {
+          setActiveCase(c);
+          const upds = await getTreatmentUpdatesForCase(c.id);
+          if (upds.length > 0) {
+            setUpdates(upds);
+          } else if (c.treatment_updates && c.treatment_updates.length > 0) {
+            setUpdates(c.treatment_updates);
+          } else {
+            setUpdates([]);
+          }
+          
+          const { checkStepAccess } = await import('@/app/lib/firebase/services');
+          const access = checkStepAccess(7, c);
+          if (!access.allowed) {
+            setAccessReason(access.reason || 'This step is locked.');
+          }
         } else {
+          setActiveCase(null);
           setUpdates([]);
+          const { checkStepAccess } = await import('@/app/lib/firebase/services');
+          const access = checkStepAccess(7, null);
+          if (!access.allowed) {
+            setAccessReason(access.reason || 'This step is locked.');
+          }
         }
-        
-        const { checkStepAccess } = await import('@/app/lib/firebase/services');
-        const access = checkStepAccess(7, c);
-        if (!access.allowed) {
-          setAccessReason(access.reason || 'This step is locked.');
-        }
-      } else {
-        setActiveCase(null);
-        setUpdates([]);
-        const { checkStepAccess } = await import('@/app/lib/firebase/services');
-        const access = checkStepAccess(7, null);
-        if (!access.allowed) {
-          setAccessReason(access.reason || 'This step is locked.');
+      } catch (err) {
+        console.error('Error loading treatment recovery updates:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
         }
       }
-    } catch (err) {
-      console.error('Error loading treatment recovery updates:', err);
-    } finally {
-      setLoading(false);
     }
-  }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (loading) {
     return (

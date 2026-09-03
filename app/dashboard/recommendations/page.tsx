@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowRight,
@@ -9,7 +9,6 @@ import {
   MapPin,
   Lock,
   Star,
-  Building2,
   ShieldCheck,
   XCircle,
   Clock,
@@ -40,9 +39,7 @@ export default function RecommendationsPage() {
   const [declineReason, setDeclineReason] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-
+  const reloadData = async () => {
     try {
       const stored = getStoredUser();
       const user = auth.currentUser;
@@ -61,6 +58,8 @@ export default function RecommendationsPage() {
         const access = checkStepAccess(3, c);
         if (!access.allowed) {
           setAccessReason(access.reason || 'This step is locked.');
+        } else {
+          setAccessReason(null);
         }
       } else {
         setHospitals(DEFAULT_HOSPITALS);
@@ -72,14 +71,54 @@ export default function RecommendationsPage() {
       }
     } catch (err) {
       console.error('Error loading recommendations:', err);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let isMounted = true;
+    async function init() {
+      try {
+        const stored = getStoredUser();
+        const user = auth.currentUser;
+        const uid = user?.uid || stored?.uid || null;
+        const email = user?.email || stored?.email || null;
+        const c = await getUserActiveCase(uid, email);
+        if (!isMounted) return;
+        if (c) {
+          setActiveCase(c);
+          setSelectedHospitalId(c.selected_hospital_id || null);
+          const recList = (c.recommended_hospitals && c.recommended_hospitals.length > 0)
+            ? c.recommended_hospitals
+            : DEFAULT_HOSPITALS;
+          setHospitals(recList);
+          
+          const { checkStepAccess } = await import('@/app/lib/firebase/services');
+          const access = checkStepAccess(3, c);
+          if (!access.allowed) {
+            setAccessReason(access.reason || 'This step is locked.');
+          }
+        } else {
+          setHospitals(DEFAULT_HOSPITALS);
+          const { checkStepAccess } = await import('@/app/lib/firebase/services');
+          const access = checkStepAccess(3, null);
+          if (!access.allowed) {
+            setAccessReason(access.reason || 'This step is locked.');
+          }
+        }
+      } catch (err) {
+        console.error('Error loading recommendations:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSelectHospital = async (hosp: Hospital) => {
     if (!activeCase) return;
@@ -88,9 +127,10 @@ export default function RecommendationsPage() {
     try {
       await patientSelectHospital(activeCase.id, hosp.id, hosp);
       setSelectedHospitalId(hosp.id);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to select hospital.');
+      await reloadData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Failed to select hospital.');
     } finally {
       setSelecting(null);
     }
@@ -105,9 +145,10 @@ export default function RecommendationsPage() {
       await patientDeclineHospitals(activeCase.id, declineReason.trim());
       setDeclineReason('');
       setShowDeclineForm(false);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit request.');
+      await reloadData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Failed to submit request.');
     } finally {
       setDeclining(false);
     }
@@ -303,12 +344,12 @@ export default function RecommendationsPage() {
                   {showDeclineForm && (
                     <div className="p-5 bg-red-50 border border-red-200 rounded-xl space-y-4 mt-4 animate-in fade-in slide-in-from-top-2">
                       <label className="block text-xs font-bold text-red-900">
-                        Please tell us what you're looking for instead:
+                        Please tell us what you&apos;re looking for instead:
                       </label>
                       <textarea
                         value={declineReason}
                         onChange={(e) => setDeclineReason(e.target.value)}
-                        placeholder="e.g. I prefer a hospital in Europe, or I'm looking for a lower price range..."
+                        placeholder="e.g. I prefer a hospital in Europe, or I&apos;m looking for a lower price range..."
                         rows={3}
                         className="w-full px-4 py-3 text-sm bg-white border border-red-200 rounded-xl focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 resize-none"
                       />

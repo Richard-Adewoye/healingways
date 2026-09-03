@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowRight,
@@ -9,9 +9,6 @@ import {
   Lock,
   Calendar,
   Clock,
-  MapPin,
-  FileCheck2,
-  Stethoscope,
   XCircle,
   AlertCircle
 } from 'lucide-react';
@@ -36,9 +33,7 @@ export default function MedicalItineraryPage() {
   const [declineReason, setDeclineReason] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-
+  const reloadData = async () => {
     try {
       const stored = getStoredUser();
       const user = auth.currentUser;
@@ -51,17 +46,45 @@ export default function MedicalItineraryPage() {
       const access = checkStepAccess(4, c);
       if (!access.allowed) {
         setAccessReason(access.reason || 'This step is locked.');
+      } else {
+        setAccessReason(null);
       }
     } catch (err) {
       console.error('Error loading medical itinerary:', err);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let isMounted = true;
+    async function init() {
+      try {
+        const stored = getStoredUser();
+        const user = auth.currentUser;
+        const uid = user?.uid || stored?.uid || null;
+        const email = user?.email || stored?.email || null;
+        const c = await getUserActiveCase(uid, email);
+        if (!isMounted) return;
+        setActiveCase(c);
+        
+        const { checkStepAccess } = await import('@/app/lib/firebase/services');
+        const access = checkStepAccess(4, c);
+        if (!access.allowed) {
+          setAccessReason(access.reason || 'This step is locked.');
+        }
+      } catch (err) {
+        console.error('Error loading medical itinerary:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleConfirmItinerary = async () => {
     if (!activeCase) return;
@@ -69,9 +92,10 @@ export default function MedicalItineraryPage() {
     setErrorMsg(null);
     try {
       await patientConfirmMedicalItinerary(activeCase.id);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error confirming itinerary.');
+      await reloadData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Error confirming itinerary.');
     } finally {
       setConfirming(false);
     }
@@ -86,9 +110,10 @@ export default function MedicalItineraryPage() {
       await patientDeclineMedicalItinerary(activeCase.id, declineReason.trim());
       setDeclineReason('');
       setShowDeclineForm(false);
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit revision request.');
+      await reloadData();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Failed to submit revision request.');
     } finally {
       setDeclining(false);
     }

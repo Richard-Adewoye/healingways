@@ -110,6 +110,12 @@ export default function ConsultationPage() {
   const handleStepOneNext = (data: any) => {
     const updated = { ...formData, aboutYou: data };
     setFormData(updated);
+    if (data?.email) {
+      try {
+        localStorage.setItem('hw_user_email', data.email);
+        localStorage.setItem('hw_user_fullname', data.fullName || data.patientName || '');
+      } catch {}
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(2);
     localStorage.setItem(STEP_KEY, '2');
@@ -120,7 +126,10 @@ export default function ConsultationPage() {
     setFormData(updated);
     if (data.caseId) {
       setCaseId(data.caseId);
-      localStorage.setItem(CASE_KEY, data.caseId);
+      try {
+        localStorage.setItem(CASE_KEY, data.caseId);
+        localStorage.setItem('hw_active_case_id', data.caseId);
+      } catch {}
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(3);
@@ -130,6 +139,13 @@ export default function ConsultationPage() {
   const handleStepThreeNext = (data: any) => {
     const updated = { ...formData, medicalDetails: data };
     setFormData(updated);
+    if (data.caseId) {
+      setCaseId(data.caseId);
+      try {
+        localStorage.setItem(CASE_KEY, data.caseId);
+        localStorage.setItem('hw_active_case_id', data.caseId);
+      } catch {}
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(4);
     localStorage.setItem(STEP_KEY, '4');
@@ -138,6 +154,13 @@ export default function ConsultationPage() {
   const handleStepFourNext = (data: any) => {
     const updated = { ...formData, documentsUploaded: data.documentsUploaded || [] };
     setFormData(updated);
+    if (data.caseId) {
+      setCaseId(data.caseId);
+      try {
+        localStorage.setItem(CASE_KEY, data.caseId);
+        localStorage.setItem('hw_active_case_id', data.caseId);
+      } catch {}
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(5);
     localStorage.setItem(STEP_KEY, '5');
@@ -146,19 +169,31 @@ export default function ConsultationPage() {
   const handleStepFiveNext = (data: any) => {
     const updated = { ...formData, preferences: data };
     setFormData(updated);
+    if (data.caseId) {
+      setCaseId(data.caseId);
+      try {
+        localStorage.setItem(CASE_KEY, data.caseId);
+        localStorage.setItem('hw_active_case_id', data.caseId);
+      } catch {}
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setCurrentStep(6);
     localStorage.setItem(STEP_KEY, '6');
   };
 
-  const handleStepSixSubmit = () => {
-    const finalCaseId = caseId || localStorage.getItem(CASE_KEY) || '';
+  const handleStepSixSubmit = (consentData?: any) => {
+    const finalCaseId = consentData?.caseId || caseId || (typeof window !== 'undefined' ? (localStorage.getItem(CASE_KEY) || localStorage.getItem('hw_active_case_id')) : '') || '';
     setSubmittedCaseId(finalCaseId);
+    if (finalCaseId) {
+      try {
+        localStorage.setItem(CASE_KEY, finalCaseId);
+        localStorage.setItem('hw_active_case_id', finalCaseId);
+      } catch {}
+    }
     setCurrentStep(7);
     localStorage.setItem(STEP_KEY, '7');
     try {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STEP_KEY);
     } catch {}
   };
 

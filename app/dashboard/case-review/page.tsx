@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ArrowRight, 
-  FileText, 
   Clock, 
   AlertCircle,
   Loader2,
   CheckCircle2,
   Lock,
-  Building2,
   XCircle
 } from 'lucide-react';
 import { auth } from '@/app/lib/firebase/client';
@@ -34,9 +32,7 @@ export default function PatientCaseReviewPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [accessReason, setAccessReason] = useState<string | null>(null);
 
-  const fetchCaseDetails = useCallback(async () => {
-    setLoading(true);
-
+  const reloadCase = async () => {
     try {
       const stored = getStoredUser();
       const user = auth.currentUser;
@@ -49,21 +45,53 @@ export default function PatientCaseReviewPage() {
       const access = checkStepAccess(2, c);
       if (!access.allowed) {
         setAccessReason(access.reason || 'This step is locked.');
+      } else {
+        setAccessReason(null);
       }
 
       if (c?.review_accepted) {
         setConfirmedCheck(true);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching case:', err);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchCaseDetails();
-  }, [fetchCaseDetails]);
+    let isMounted = true;
+    async function init() {
+      try {
+        const stored = getStoredUser();
+        const user = auth.currentUser;
+        const uid = user?.uid || stored?.uid || null;
+        const email = user?.email || stored?.email || null;
+        const c = await getUserActiveCase(uid, email);
+        if (!isMounted) return;
+        setCaseDetails(c);
+        
+        const { checkStepAccess } = await import('@/app/lib/firebase/services');
+        const access = checkStepAccess(2, c);
+        if (!access.allowed) {
+          setAccessReason(access.reason || 'This step is locked.');
+        }
+
+        if (c?.review_accepted) {
+          setConfirmedCheck(true);
+        }
+      } catch (err) {
+        console.error('Error fetching case:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleAcceptReview = async () => {
     if (!caseDetails || !confirmedCheck) return;
@@ -72,9 +100,10 @@ export default function PatientCaseReviewPage() {
 
     try {
       await patientAcceptCaseReview(caseDetails.id);
-      await fetchCaseDetails();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to accept review. Please try again.');
+      await reloadCase();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Failed to accept review. Please try again.');
     } finally {
       setAccepting(false);
     }
@@ -89,9 +118,10 @@ export default function PatientCaseReviewPage() {
       await patientDeclineCaseReview(caseDetails.id, declineReason.trim());
       setDeclineReason('');
       setShowDeclineForm(false);
-      await fetchCaseDetails();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit revision request. Please try again.');
+      await reloadCase();
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Failed to submit revision request. Please try again.');
     } finally {
       setDeclining(false);
     }

@@ -350,6 +350,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
 }
 
 export async function saveUserProfile(profile: Partial<UserProfile> & { uid: string; email: string }): Promise<void> {
+  console.log('saveUserProfile called with profile:', profile);
   try {
     const userRef = doc(db, 'users', profile.uid);
     const now = new Date().toISOString();
@@ -364,13 +365,40 @@ export async function saveUserProfile(profile: Partial<UserProfile> & { uid: str
       updated_at: now,
     };
 
-    await setDoc(userRef, dataToSave, { merge: true });
+    // Use withTimeout to prevent hanging Firestore calls on slower environments
+    try {
+      await withTimeout(setDoc(userRef, dataToSave, { merge: true }), 2500, undefined);
+    } catch (dbErr) {
+      console.warn('Firestore setDoc failed/timeout, continuing with local persistence:', dbErr);
+    }
+
+    // Always update the active stored user session so that the application instantly recognizes the user
     const currentStored = getStoredUser();
-    if (currentStored?.uid === profile.uid) {
-      setStoredUser({ ...currentStored, ...dataToSave } as UserProfile);
+    const updatedProfile: UserProfile = {
+      uid: profile.uid,
+      email: cleanEmail,
+      fullName: profile.fullName || currentStored?.fullName || '',
+      phone: profile.phone || currentStored?.phone || '',
+      country: profile.country || currentStored?.country || '',
+      role: role as 'patient' | 'admin' | 'coordinator',
+      createdAt: currentStored?.createdAt || now,
+      updatedAt: now,
+    };
+    setStoredUser(updatedProfile);
+
+    // Also persist in the local registration registry for robust authentication integration
+    try {
+      const reg = getLocalRegisteredUsers();
+      reg[cleanEmail] = {
+        ...updatedProfile,
+        password: reg[cleanEmail]?.password || '', // preserve local password if any, else blank
+      };
+      localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(reg));
+    } catch (regErr) {
+      console.warn('Could not save to local registry fallback:', regErr);
     }
   } catch (err) {
-    console.error('Error saving user profile in Firestore:', err);
+    console.error('Error saving user profile:', err);
   }
 }
 

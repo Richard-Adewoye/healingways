@@ -41,7 +41,7 @@ export default function MessagesPage() {
             {/* Message Bubble */}
             <div className="max-w-md bg-slate-50 border border-slate-200/60 rounded-2xl p-4 space-y-1">
               <p className="text-xs text-slate-700 leading-relaxed">
-                Thanks for reaching out — we've received your consultation request and will begin reviewing your case shortly.
+                Thanks for reaching out — we&apos;ve received your consultation request and will begin reviewing your case shortly.
               </p>
               <span className="text-[10px] text-slate-400 block">Just now</span>
             </div>

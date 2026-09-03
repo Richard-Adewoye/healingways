@@ -16,10 +16,10 @@ export default function TreatmentPlanPage() {
           <Calendar className="w-6 h-6" />
         </div>
         <h3 className="text-lg font-bold text-blue-900 max-w-sm mx-auto">
-          Available once you've accepted a hospital recommendation
+          Available once you&apos;ve accepted a hospital recommendation
         </h3>
         <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-          Your treatment plan is built once you've chosen a hospital, so it can be tailored to their scheduling.
+          Your treatment plan is built once you&apos;ve chosen a hospital, so it can be tailored to their scheduling.
         </p>
         <div className="pt-2">
           <Link

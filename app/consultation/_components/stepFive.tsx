@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { updatePatientCase } from '@/app/lib/firebase/services';
 
 const STEPS = [
@@ -33,9 +33,18 @@ const PRIORITY_OPTIONS = [
 ];
 
 interface StepFiveProps {
-  onNext?: (data: any) => void;
+  onNext?: (data: {
+    careOutsideCountry: string;
+    preferredLocation: string;
+    priorities: string[];
+    caseId?: string;
+  }) => void;
   onBack?: () => void;
-  initialData?: any;
+  initialData?: {
+    careOutsideCountry?: string;
+    preferredLocation?: string;
+    priorities?: string[];
+  };
   caseId?: string;
 }
 
@@ -50,6 +59,17 @@ export default function StepFivePreferences({
     preferredLocation: initialData.preferredLocation || 'Open to recommendations',
     priorities: (initialData.priorities || ['Treatment cost', 'Hospital reputation & JCI accreditation']) as string[],
   });
+
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        careOutsideCountry: initialData.careOutsideCountry || prev.careOutsideCountry || 'Yes',
+        preferredLocation: initialData.preferredLocation || prev.preferredLocation || 'Open to recommendations',
+        priorities: initialData.priorities || prev.priorities || ['Treatment cost', 'Hospital reputation & JCI accreditation'],
+      }));
+    }
+  }, [initialData]);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
