@@ -102,13 +102,17 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
       return;
     }
 
-    // Password validation if provided
-    if (formData.password && formData.password.length < 6) {
+    // Password validation - mandatory account creation with consultation
+    if (!formData.password) {
+      setErrorMsg('Please create an account password (at least 6 characters).');
+      return;
+    }
+    if (formData.password.length < 6) {
       setErrorMsg('Password must be at least 6 characters long.');
       return;
     }
-    if (formData.password && formData.password !== formData.confirmPassword) {
-      setErrorMsg('Passwords do not match.');
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMsg('Passwords do not match. Please verify both password entries.');
       return;
     }
 
@@ -194,13 +198,13 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
       {/* Header Section */}
       <div className="max-w-3xl mx-auto text-center space-y-3">
         <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
-          Start Your Healthcare Journey
+          Step 1: Account Creation & Patient Profile
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
-          Let&apos;s understand how we can support you.
+          Create Your Account & Start Consultation
         </h1>
         <p className="text-slate-500 text-sm sm:text-base max-w-xl mx-auto">
-          Every healthcare journey is different. Share some details, and our team will review your needs and guide you toward next steps.
+          Filling out your consultation intake registers your secure HealingWayz patient account and initializes your clinical case file.
         </p>
 
         {/* Stepper Header Bar */}
@@ -379,31 +383,42 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
             />
           </div>
 
-          {/* Account Password (Optional for quick intake) */}
-          <div className="space-y-3 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between">
+          {/* Account Password (Mandatory Account Creation) */}
+          <div className="space-y-3 pt-4 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Create Portal Password (Optional)
+                Create Account Password <span className="text-emerald-600">*</span>
               </label>
-              <span className="text-[11px] text-slate-400">To access patient portal later</span>
+              <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+                Used to log in to your Journey Dashboard
+              </span>
             </div>
+            <p className="text-xs text-slate-500">
+              Your patient account will be created with this password, securing your medical records and allowing you to track each step of your healthcare journey.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password (min 6 chars)"
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
-              />
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm password"
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
-              />
+              <div>
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password (min 6 chars) *"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+                />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm password *"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+                />
+              </div>
             </div>
           </div>
 

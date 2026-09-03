@@ -32,13 +32,22 @@ export default function HeroSection() {
             <div className="flex flex-wrap items-center gap-4 pt-4">
               <Link
                 href="/consultation"
-                className="px-6 py-3 bg-gradient-to-r from-[#44a868] to-[#2e8b50] hover:brightness-105 text-white font-medium text-sm rounded-xl shadow-md transition-all"
+                id="hero-start-consultation-btn"
+                className="px-6 py-3 bg-gradient-to-r from-[#44a868] to-[#2e8b50] hover:brightness-105 text-white font-medium text-sm rounded-xl shadow-md transition-all flex items-center justify-center"
               >
                 Start Consultation
               </Link>
               <Link
+                href="/login"
+                id="hero-patient-login-btn"
+                className="px-6 py-3 bg-white hover:bg-slate-50 text-blue-900 font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center"
+              >
+                Patient Login
+              </Link>
+              <Link
                 href="/services"
-                className="px-6 py-3 bg-[#e8f1ff] hover:bg-white text-[#2b72a0] font-medium text-sm rounded-xl shadow-md transition-all"
+                id="hero-explore-services-btn"
+                className="px-6 py-3 bg-[#e8f1ff]/20 hover:bg-[#e8f1ff]/30 text-white font-medium text-sm rounded-xl border border-white/20 transition-all flex items-center justify-center"
               >
                 Explore Services
               </Link>

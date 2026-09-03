@@ -17,14 +17,19 @@ const containerVariants: Variants = {
   },
 };
 
-export const AnimatedLogoLoader = () => {
+interface AnimatedLogoLoaderProps {
+  onDismiss?: () => void;
+}
+
+export const AnimatedLogoLoader = ({ onDismiss }: AnimatedLogoLoaderProps = {}) => {
   return (
     <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-white overflow-hidden"
+      onClick={onDismiss}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-white overflow-hidden cursor-pointer"
     >
       {/* 1. BACKGROUND AMBIENT GLOW */}
       <motion.div

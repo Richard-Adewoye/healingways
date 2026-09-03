@@ -17,13 +17,23 @@ import Footer from './components/Footer';
 import Navbar from './components/Navbar';
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      return !sessionStorage.getItem('hw_splash_seen');
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
-    // Increased duration to 6000ms (6 seconds) to allow full app initialization
+    try {
+      sessionStorage.setItem('hw_splash_seen', 'true');
+    } catch {}
+
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 10000); 
+    }, 600); 
 
     return () => clearTimeout(timer);
   }, []);
@@ -32,7 +42,12 @@ export default function Home() {
     <main className="relative min-h-screen">
       {/* Animated Loading Overlay */}
       <AnimatePresence mode="wait">
-        {isLoading && <AnimatedLogoLoader key="page-loader" />}
+        {isLoading && (
+          <AnimatedLogoLoader
+            key="page-loader"
+            onDismiss={() => setIsLoading(false)}
+          />
+        )}
       </AnimatePresence>
 
       {/* Main Page Content */}

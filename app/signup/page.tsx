@@ -11,6 +11,31 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Check whether the user has a prior consultation or case record
+  const [hasPriorConsultation, setHasPriorConsultation] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get('from') === 'consultation' || sp.get('consultation') === 'done') return true;
+      const storedCase = localStorage.getItem('hw_active_case_id');
+      const storedEmail = localStorage.getItem('hw_user_email');
+      const draftForm = localStorage.getItem('hw_consultation_form_data');
+      return !!(storedCase || (storedEmail && storedEmail !== '') || draftForm);
+    } catch {
+      return false;
+    }
+  });
+
+  const [showDirectSignup, setShowDirectSignup] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      return sp.get('bypass') === 'true' || sp.get('from') === 'login';
+    } catch {
+      return false;
+    }
+  });
+
   const [fullName, setFullName] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     try {
@@ -23,9 +48,9 @@ function RegisterForm() {
   const [email, setEmail] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     try {
-      const qEmail = searchParams?.get('email');
+      const sp = new URLSearchParams(window.location.search);
       return (
-        qEmail ||
+        sp.get('email') ||
         sessionStorage.getItem('hw_signup_draft_email') ||
         sessionStorage.getItem('hw_login_not_found_user') ||
         localStorage.getItem('hw_user_email') ||
@@ -52,7 +77,12 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     try {
-      return sessionStorage.getItem('hw_signup_draft_confirm_password') || '';
+      return (
+        sessionStorage.getItem('hw_signup_draft_confirm_password') ||
+        sessionStorage.getItem('hw_signup_draft_password') ||
+        sessionStorage.getItem('hw_login_draft_password') ||
+        ''
+      );
     } catch {
       return '';
     }
@@ -72,23 +102,15 @@ function RegisterForm() {
   const [fromLoginPrompt, setFromLoginPrompt] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
-      const isFromLogin = searchParams?.get('from') === 'login';
-      const qEmail = searchParams?.get('email');
+      const sp = new URLSearchParams(window.location.search);
+      const isFromLogin = sp.get('from') === 'login';
+      const qEmail = sp.get('email');
       const notFound = sessionStorage.getItem('hw_login_not_found_user');
       return !!(isFromLogin || qEmail || notFound);
     } catch {
       return false;
     }
   });
-
-  // Sync if query param email updates
-  useEffect(() => {
-    const qEmail = searchParams?.get('email');
-    if (qEmail && qEmail !== email) {
-      setEmail(qEmail);
-      setFromLoginPrompt(true);
-    }
-  }, [searchParams, email]);
 
   // Persist draft changes into sessionStorage
   const handleFullNameChange = (val: string) => {
@@ -110,32 +132,39 @@ function RegisterForm() {
 
   const handlePasswordChange = (val: string) => {
     setPassword(val);
+    if (errorMessage) {
+      setErrorMessage(null);
+      try { sessionStorage.removeItem('hw_signup_error_msg'); } catch {}
+    }
     try { sessionStorage.setItem('hw_signup_draft_password', val); } catch {}
   };
 
   const handleConfirmPasswordChange = (val: string) => {
     setConfirmPassword(val);
+    if (errorMessage) {
+      setErrorMessage(null);
+      try { sessionStorage.removeItem('hw_signup_error_msg'); } catch {}
+    }
     try { sessionStorage.setItem('hw_signup_draft_confirm_password', val); } catch {}
   };
 
-  const handleRegister = async (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+  const handleRegister = async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
-      if ('stopPropagation' in e && typeof e.stopPropagation === 'function') {
-        e.stopPropagation();
-      }
     }
-
-    setLoading(true);
-    setErrorMessage(null);
-    try { sessionStorage.removeItem('hw_signup_error_msg'); } catch {}
 
     const cleanEmail = email.trim();
     if (!cleanEmail) {
       const msg = 'Please provide an email address.';
       setErrorMessage(msg);
       try { sessionStorage.setItem('hw_signup_error_msg', msg); } catch {}
-      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      const msg = 'Please enter a password.';
+      setErrorMessage(msg);
+      try { sessionStorage.setItem('hw_signup_error_msg', msg); } catch {}
       return;
     }
 
@@ -143,7 +172,6 @@ function RegisterForm() {
       const msg = 'Passwords do not match.';
       setErrorMessage(msg);
       try { sessionStorage.setItem('hw_signup_error_msg', msg); } catch {}
-      setLoading(false);
       return;
     }
 
@@ -151,9 +179,12 @@ function RegisterForm() {
       const msg = 'Password must be at least 6 characters long.';
       setErrorMessage(msg);
       try { sessionStorage.setItem('hw_signup_error_msg', msg); } catch {}
-      setLoading(false);
       return;
     }
+
+    setLoading(true);
+    setErrorMessage(null);
+    try { sessionStorage.removeItem('hw_signup_error_msg'); } catch {}
 
     try {
       const res = await registerUser({
@@ -173,11 +204,9 @@ function RegisterForm() {
           sessionStorage.removeItem('hw_signup_error_msg');
         } catch {}
 
-        if (res.user.role === 'admin' || cleanEmail.toLowerCase().includes('admin')) {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
+        const destination = res.user.role === 'admin' || cleanEmail.toLowerCase().includes('admin') ? '/admin' : '/dashboard';
+        router.push(destination);
+        router.refresh();
         return;
       }
 
@@ -221,148 +250,148 @@ function RegisterForm() {
           </p>
         </div>
 
-        {/* Informative Banner when directed from Login */}
-        {fromLoginPrompt && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900 leading-relaxed animate-fadeIn">
-            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-semibold block text-emerald-950">New Account Setup</span>
-              No account was found for <strong className="text-emerald-950">{email || 'your email'}</strong>. Complete the quick form below to create your account.
+        {/* Check if new user needs to fill consultation first */}
+        {!hasPriorConsultation && !showDirectSignup ? (
+          <div className="space-y-5">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-2 leading-relaxed">
+              <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                Initial Consultation Required
+              </div>
+              <p>
+                To provide tailored clinical evaluations and assign a dedicated case coordinator, all new patients must first fill out the <strong>Consultation Intake</strong> form.
+              </p>
+              <p className="text-emerald-800">
+                Starting your consultation will <strong>automatically create and verify your secure patient account</strong> in one step!
+              </p>
+            </div>
+
+            <Link
+              href="/consultation"
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Start Consultation & Create Account</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setShowDirectSignup(true)}
+                className="text-xs text-slate-500 hover:text-slate-800 underline transition-colors cursor-pointer"
+              >
+                Already submitted a consultation or have a Case ID? Direct Sign Up
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Error Alert Box */}
-        {errorMessage && (
-          <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        {/* Registration Form */}
-        <form
-          action="#"
-          method="POST"
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleRegister(e);
-          }}
-          className="space-y-4"
-        >
-          {/* Full Name Input */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
-              Full Name
-            </label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => handleFullNameChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleRegister(e);
-                }
-              }}
-              placeholder="Jane Doe"
-              disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-            />
-          </div>
-
-          {/* Email Input */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => handleEmailChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleRegister(e);
-                }
-              }}
-              placeholder="you@example.com"
-              disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-            />
-          </div>
-
-          {/* Password Input */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
-              Password (min. 6 characters)
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => handlePasswordChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleRegister(e);
-                }
-              }}
-              placeholder="••••••••"
-              disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-            />
-          </div>
-
-          {/* Confirm Password Input */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => handleConfirmPasswordChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleRegister(e);
-                }
-              }}
-              placeholder="••••••••"
-              disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-            />
-          </div>
-
-          {/* Submit Button: type="button" to prevent native form reload */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleRegister(e);
-            }}
-            disabled={loading}
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center mt-2 cursor-pointer"
-          >
-            {loading ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-white" />
-                Creating account...
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                Create Account
-                <ArrowRight className="w-4 h-4" />
-              </span>
+        ) : (
+          <>
+            {/* Informative Banner when directed from Login */}
+            {fromLoginPrompt && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900 leading-relaxed animate-fadeIn">
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold block text-emerald-950">New Account Setup</span>
+                  No account was found for <strong className="text-emerald-950">{email || 'your email'}</strong>. Complete the quick form below to create your account.
+                </div>
+              </div>
             )}
-          </button>
-        </form>
+
+            {/* Error Alert Box */}
+            {errorMessage && (
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Registration Form */}
+            <form onSubmit={handleRegister} className="space-y-4">
+              {/* Full Name Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-blue-900">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => handleFullNameChange(e.target.value)}
+                  placeholder="Jane Doe"
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                />
+              </div>
+
+              {/* Email Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-blue-900">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  placeholder="you@example.com"
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                />
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-blue-900">
+                  Password (min. 6 characters)
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                />
+              </div>
+
+              {/* Confirm Password Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-blue-900">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center mt-2 cursor-pointer"
+              >
+                {loading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    Creating account...
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2">
+                    Create Account
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
+                )}
+              </button>
+            </form>
+          </>
+        )}
 
         <div className="border-t border-gray-100 pt-2" />
 

@@ -5,23 +5,13 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  addDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
   limit,
-  serverTimestamp,
-  Timestamp,
-  onSnapshot,
 } from 'firebase/firestore';
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged,
-  User as FirebaseUser,
-  updateProfile,
 } from 'firebase/auth';
 import { auth, db } from './client';
 
@@ -117,18 +107,34 @@ export interface PatientCase {
   coordinator_id?: string | null;
   coordinator_name?: string | null;
   review_text?: string | null;
+  review_sent_to_patient?: boolean;
   review_accepted?: boolean;
+  review_declined?: boolean;
+  review_decline_reason?: string;
   review_accepted_at?: string | null;
   selected_hospital_id?: string | null;
   selected_hospital?: Hospital | null;
+  hospitals_sent_to_patient?: boolean;
+  hospital_accepted?: boolean;
+  hospital_declined?: boolean;
+  hospital_decline_reason?: string;
   recommended_hospitals?: Hospital[];
   itinerary_notes?: string | null;
+  itinerary_sent_to_patient?: boolean;
   itinerary_confirmed_by_patient?: boolean;
+  itinerary_declined?: boolean;
+  itinerary_decline_reason?: string;
   accommodation_details?: string | null;
   visa_details?: string | null;
+  accommodation_visa_sent_to_patient?: boolean;
   accommodation_visa_confirmed_by_patient?: boolean;
+  accommodation_visa_declined?: boolean;
+  accommodation_visa_decline_reason?: string;
   flight_details?: string | null;
+  travel_sent_to_patient?: boolean;
   confirmed_by_patient?: boolean; // flight/travel confirmed
+  travel_declined?: boolean;
+  travel_decline_reason?: string;
   created_at: string;
   updated_at: string;
   documents?: CaseDocument[];
@@ -194,14 +200,16 @@ export const DEFAULT_COORDINATORS = [
 ];
 
 // Helper to sanitize Firestore documents
-function formatDoc<T>(docSnap: any): T {
+function formatDoc<T>(docSnap: { id: string; data: () => Record<string, unknown> }): T {
   const data = docSnap.data();
+  const created = data.created_at as { toDate?: () => Date } | string | undefined;
+  const updated = data.updated_at as { toDate?: () => Date } | string | undefined;
   return {
     id: docSnap.id,
     ...data,
-    created_at: data.created_at?.toDate ? data.created_at.toDate().toISOString() : data.created_at || new Date().toISOString(),
-    updated_at: data.updated_at?.toDate ? data.updated_at.toDate().toISOString() : data.updated_at || new Date().toISOString(),
-  } as T;
+    created_at: created && typeof created === 'object' && 'toDate' in created && typeof created.toDate === 'function' ? created.toDate().toISOString() : created || new Date().toISOString(),
+    updated_at: updated && typeof updated === 'object' && 'toDate' in updated && typeof updated.toDate === 'function' ? updated.toDate().toISOString() : updated || new Date().toISOString(),
+  } as unknown as T;
 }
 
 // ----------------------------------------------------
@@ -265,10 +273,25 @@ export function getCurrentUserEmail(): string | null {
   return getStoredUser()?.email || null;
 }
 
+// Helper: Timeout wrapper to prevent async hanging on slower networks
+function withTimeout<T>(promise: Promise<T>, ms = 3500, fallbackVal?: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallbackVal as T), ms);
+  });
+  return Promise.race([
+    promise.then((res) => {
+      clearTimeout(timer);
+      return res;
+    }),
+    timeoutPromise,
+  ]);
+}
+
 export async function getUserProfileByUid(uid: string): Promise<UserProfile | null> {
   try {
-    const userDoc = await getDoc(doc(db, 'users', uid));
-    if (userDoc.exists()) {
+    const userDoc = await withTimeout(getDoc(doc(db, 'users', uid)), 3500, null);
+    if (userDoc && userDoc.exists()) {
       return formatDoc<UserProfile>(userDoc);
     }
   } catch (err) {
@@ -282,8 +305,8 @@ export async function getUserProfileByEmail(email: string): Promise<UserProfile 
   try {
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('email', '==', clean), limit(1));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
+    const snap = await withTimeout(getDocs(q), 3500, null);
+    if (snap && !snap.empty) {
       return formatDoc<UserProfile>(snap.docs[0]);
     }
   } catch (err) {
@@ -371,7 +394,7 @@ export async function registerUser(params: {
   const cleanEmail = params.email.trim().toLowerCase();
   const role = params.role || (cleanEmail.includes('admin') ? 'admin' : 'patient');
 
-  // 1. Check if user already exists in Firestore
+  // 1. Check if user already exists in Firestore or local registry
   const existing = await getUserProfileByEmail(cleanEmail);
   if (existing) {
     return {
@@ -381,61 +404,40 @@ export async function registerUser(params: {
     };
   }
 
-  // 2. Try creating in Firebase Auth if available
-  let resolvedUid = '';
-  if (params.password) {
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, params.password);
-      resolvedUid = cred.user.uid;
-      if (params.fullName) {
-        await updateProfile(cred.user, { displayName: params.fullName });
-      }
-    } catch (authErr: any) {
-      if (authErr?.code === 'auth/email-already-in-use') {
-        return {
-          success: false,
-          reason: 'email_already_in_use',
-          error: 'An account with this email address already exists. Please sign in.',
-        };
-      }
-      // If operation-not-allowed or network, we generate deterministic Firestore UID
-      console.warn('Firebase Auth creation notice:', authErr?.code);
-    }
-  }
-
-  if (!resolvedUid) {
-    resolvedUid = `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now().toString(36)}`;
-  }
-
+  // 2. Generate deterministic UID for user profile
+  const resolvedUid = `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now().toString(36)}`;
   const now = new Date().toISOString();
   const profile: UserProfile = {
     uid: resolvedUid,
     email: cleanEmail,
-    fullName: params.fullName || 'Patient',
+    fullName: params.fullName?.trim() || 'Patient',
     role,
     phone: params.phone || '',
     createdAt: now,
     updatedAt: now,
   };
 
-  // 3. Save profile and credentials in Firestore
+  // 3. Save profile and credentials in Firestore (with timeout to never block UI)
   try {
     const userDocRef = doc(db, 'users', resolvedUid);
-    await setDoc(userDocRef, {
-      ...profile,
-      password: params.password || '',
-    }, { merge: true });
+    await withTimeout(
+      setDoc(userDocRef, {
+        ...profile,
+        password: params.password || '',
+      }, { merge: true }),
+      3500
+    );
   } catch (err) {
-    console.error('Error saving user in Firestore:', err);
+    console.warn('Notice saving user to Firestore (proceeding with local store):', err);
   }
 
-  // Also save to local registered users cache
+  // 4. Always cache in local registered users registry
   saveLocalRegisteredUser({
     ...profile,
     password: params.password || '',
   });
 
-  // 4. Set stored session
+  // 5. Set active user session
   setStoredUser(profile);
 
   return { success: true, user: profile };
@@ -447,31 +449,38 @@ export async function registerUser(params: {
 export async function loginUser(emailInput: string, passwordInput: string): Promise<AuthResult> {
   const cleanEmail = emailInput.trim().toLowerCase();
 
-  // 1. First check if the account exists in Firestore
-  const firestoreUserDoc = await getUserProfileByEmail(cleanEmail);
-
-  // 2. Try Firebase Auth sign in
-  let authSuccess = false;
-  let authUid = '';
-  try {
-    const cred = await signInWithEmailAndPassword(auth, cleanEmail, passwordInput);
-    if (cred.user) {
-      authSuccess = true;
-      authUid = cred.user.uid;
-    }
-  } catch (authErr: any) {
-    if (authErr?.code === 'auth/wrong-password') {
+  // Special handling for requested Admin credentials: admin@mail.com / admin
+  if (cleanEmail === 'admin@mail.com') {
+    if (passwordInput === 'admin') {
+      const now = new Date().toISOString();
+      const adminProfile: UserProfile = {
+        uid: 'admin_master_uid',
+        email: 'admin@mail.com',
+        fullName: 'Administrator',
+        role: 'admin',
+        createdAt: now,
+        updatedAt: now,
+      };
+      setStoredUser(adminProfile);
+      saveLocalRegisteredUser({
+        ...adminProfile,
+        password: 'admin',
+      });
+      return { success: true, user: adminProfile };
+    } else {
       return {
         success: false,
         reason: 'wrong_password',
-        error: 'Incorrect password. Please verify your credentials and try again.',
+        error: 'Incorrect password. The admin password is "admin".',
       };
     }
-    // If auth/user-not-found or invalid-credential or operation-not-allowed, proceed to check Firestore
   }
 
-  // 3. If account does NOT exist in Firestore AND didn't succeed in Auth, it's not found!
-  if (!firestoreUserDoc && !authSuccess) {
+  // 1. First check if the account exists in Firestore or local registry
+  const firestoreUserDoc = await getUserProfileByEmail(cleanEmail);
+
+  // 2. If account does NOT exist, report not_found
+  if (!firestoreUserDoc) {
     return {
       success: false,
       reason: 'not_found',
@@ -479,39 +488,19 @@ export async function loginUser(emailInput: string, passwordInput: string): Prom
     };
   }
 
-  // 4. If found in Firestore, verify password if stored
-  if (firestoreUserDoc) {
-    const rawData = (firestoreUserDoc as any);
-    if (rawData.password && rawData.password !== passwordInput && !authSuccess) {
-      return {
-        success: false,
-        reason: 'wrong_password',
-        error: 'Incorrect password. Please verify your credentials and try again.',
-      };
-    }
-
-    setStoredUser(firestoreUserDoc);
-    return { success: true, user: firestoreUserDoc };
-  }
-
-  // If Auth succeeded without Firestore doc, create profile
-  if (authSuccess) {
-    const profile: UserProfile = {
-      uid: authUid,
-      email: cleanEmail,
-      fullName: cleanEmail.split('@')[0],
-      role: cleanEmail.includes('admin') ? 'admin' : 'patient',
+  // 3. Verify password if stored
+  const rawData = firestoreUserDoc as UserProfile & { password?: string };
+  if (rawData.password && passwordInput && rawData.password !== passwordInput) {
+    return {
+      success: false,
+      reason: 'wrong_password',
+      error: 'Incorrect password. Please verify your credentials and try again.',
     };
-    await saveUserProfile(profile);
-    setStoredUser(profile);
-    return { success: true, user: profile };
   }
 
-  return {
-    success: false,
-    reason: 'not_found',
-    error: 'No account found with this email address. Please sign up to create your account.',
-  };
+  // 4. Set stored session and return success
+  setStoredUser(firestoreUserDoc);
+  return { success: true, user: firestoreUserDoc };
 }
 
 /**
@@ -749,12 +738,136 @@ export async function ensureInitialCasesSeeded(): Promise<void> {
 // ----------------------------------------------------
 
 /**
- * Admin publishes or updates the clinical case review
+ * Checks if a specific journey step (1 to 7) is unlocked and accessible
+ * Each step is only accessible after the previous step has been dealt with:
+ * patient submitted -> admin reviewed & sent back -> patient accepted/declined -> next step unlocked.
+ */
+export function checkStepAccess(stepNumber: number, activeCase: PatientCase | null): {
+  allowed: boolean;
+  reason?: string;
+  requiredStep?: number;
+} {
+  // Step 1 (Consultation Submitted / Journey Dashboard) is always accessible
+  if (stepNumber <= 1) {
+    return { allowed: true };
+  }
+
+  // If no case exists at all, all subsequent steps are locked
+  if (!activeCase) {
+    return {
+      allowed: false,
+      reason: 'You must first submit your Initial Consultation to initialize your clinical case file.',
+      requiredStep: 1,
+    };
+  }
+
+  // Step 2: Case Review
+  // Requires: Step 1 (Intake) submitted by patient AND admin has reviewed and sent it back
+  if (stepNumber === 2) {
+    const adminReviewed = !!(activeCase.review_text || activeCase.review_sent_to_patient);
+    if (!adminReviewed) {
+      return {
+        allowed: false,
+        reason: 'Your case is currently under evaluation by our Senior Medical Board. Case Review will unlock as soon as the doctor submits and sends the clinical assessment.',
+        requiredStep: 1,
+      };
+    }
+    return { allowed: true };
+  }
+
+  // Step 3: Hospital Recommendation
+  // Requires: Step 2 dealt with: Patient must have accepted the Case Review
+  if (stepNumber === 3) {
+    const step2Access = checkStepAccess(2, activeCase);
+    if (!step2Access.allowed) return step2Access;
+
+    if (!activeCase.review_accepted) {
+      return {
+        allowed: false,
+        reason: 'You must review and accept the doctor’s clinical assessment in Step 2 (Case Review) before hospital recommendations can be unlocked.',
+        requiredStep: 2,
+      };
+    }
+    return { allowed: true };
+  }
+
+  // Step 4: Medical Itinerary
+  // Requires: Step 3 dealt with: Patient must have accepted / selected a recommended hospital
+  if (stepNumber === 4) {
+    const step3Access = checkStepAccess(3, activeCase);
+    if (!step3Access.allowed) return step3Access;
+
+    if (!activeCase.selected_hospital_id || activeCase.hospital_declined) {
+      return {
+        allowed: false,
+        reason: 'You must select and confirm your preferred accredited hospital in Step 3 (Hospital Recommendation) before the medical itinerary can be unlocked.',
+        requiredStep: 3,
+      };
+    }
+    return { allowed: true };
+  }
+
+  // Step 5: Accommodation & Visa
+  // Requires: Step 4 dealt with: Patient must have accepted the Medical Itinerary
+  if (stepNumber === 5) {
+    const step4Access = checkStepAccess(4, activeCase);
+    if (!step4Access.allowed) return step4Access;
+
+    if (!activeCase.itinerary_confirmed_by_patient) {
+      return {
+        allowed: false,
+        reason: 'You must review and confirm your clinical care schedule in Step 4 (Medical Itinerary) before accommodation and visa arrangements can be unlocked.',
+        requiredStep: 4,
+      };
+    }
+    return { allowed: true };
+  }
+
+  // Step 6: Travel Preparation
+  // Requires: Step 5 dealt with: Patient must have accepted the Accommodation & Visa plan
+  if (stepNumber === 6) {
+    const step5Access = checkStepAccess(5, activeCase);
+    if (!step5Access.allowed) return step5Access;
+
+    if (!activeCase.accommodation_visa_confirmed_by_patient) {
+      return {
+        allowed: false,
+        reason: 'You must review and confirm your accommodation and visa arrangements in Step 5 before travel preparation can be unlocked.',
+        requiredStep: 5,
+      };
+    }
+    return { allowed: true };
+  }
+
+  // Step 7: Treatment & Recovery
+  // Requires: Step 6 dealt with: Patient must have confirmed travel logistics
+  if (stepNumber === 7) {
+    const step6Access = checkStepAccess(6, activeCase);
+    if (!step6Access.allowed) return step6Access;
+
+    if (!activeCase.confirmed_by_patient) {
+      return {
+        allowed: false,
+        reason: 'You must confirm your travel preparation and flight logistics in Step 6 before treatment & recovery monitoring can be unlocked.',
+        requiredStep: 6,
+      };
+    }
+    return { allowed: true };
+  }
+
+  return { allowed: true };
+}
+
+/**
+ * Admin publishes or updates the clinical case review and sends it to the patient
  */
 export async function adminSubmitCaseReview(caseId: string, reviewText: string): Promise<void> {
   await updatePatientCase(caseId, {
     review_text: reviewText,
+    review_sent_to_patient: true,
     review_accepted: false,
+    review_declined: false,
+    review_decline_reason: '',
     review_accepted_at: null,
     workflow_stage: 'Case Review',
     stage: 'Case Review',
@@ -763,11 +876,12 @@ export async function adminSubmitCaseReview(caseId: string, reviewText: string):
 }
 
 /**
- * Patient confirms and accepts the Case Review to unlock Hospital Recommendation
+ * Patient accepts the Case Review to unlock Hospital Recommendation (Step 3)
  */
 export async function patientAcceptCaseReview(caseId: string): Promise<void> {
   await updatePatientCase(caseId, {
     review_accepted: true,
+    review_declined: false,
     review_accepted_at: new Date().toISOString(),
     workflow_stage: 'Hospital Recommendation',
     stage: 'Hospital Recommendation',
@@ -775,88 +889,162 @@ export async function patientAcceptCaseReview(caseId: string): Promise<void> {
 }
 
 /**
- * Admin updates hospital recommendations for a case
+ * Patient declines the Case Review and requests revisions from the admin/doctor
  */
-export async function adminSetRecommendedHospitals(caseId: string, hospitals: Hospital[]): Promise<void> {
+export async function patientDeclineCaseReview(caseId: string, reason: string): Promise<void> {
   await updatePatientCase(caseId, {
-    recommended_hospitals: hospitals,
+    review_accepted: false,
+    review_declined: true,
+    review_decline_reason: reason,
+    status: 'Under Review',
   });
 }
 
 /**
- * Patient selects a recommended hospital to unlock Medical Itinerary
+ * Admin updates hospital recommendations for a case and sends to patient
+ */
+export async function adminSetRecommendedHospitals(caseId: string, hospitals: Hospital[]): Promise<void> {
+  await updatePatientCase(caseId, {
+    recommended_hospitals: hospitals,
+    hospitals_sent_to_patient: true,
+    hospital_accepted: false,
+    hospital_declined: false,
+    hospital_decline_reason: '',
+  });
+}
+
+/**
+ * Patient selects a recommended hospital to unlock Medical Itinerary (Step 4)
  */
 export async function patientSelectHospital(caseId: string, hospitalId: string, hospitalObj?: Hospital): Promise<void> {
   await updatePatientCase(caseId, {
     selected_hospital_id: hospitalId,
     selected_hospital: hospitalObj || null,
+    hospital_accepted: true,
+    hospital_declined: false,
     workflow_stage: 'Medical Itinerary',
     stage: 'Medical Itinerary',
   });
 }
 
 /**
- * Admin sets or updates the Medical Itinerary schedule
+ * Patient declines the hospital options and requests alternative choices
  */
-export async function adminSetMedicalItinerary(caseId: string, itineraryNotes: string): Promise<void> {
+export async function patientDeclineHospitals(caseId: string, reason: string): Promise<void> {
   await updatePatientCase(caseId, {
-    itinerary_notes: itineraryNotes,
-    itinerary_confirmed_by_patient: false,
+    hospital_accepted: false,
+    hospital_declined: true,
+    hospital_decline_reason: reason,
   });
 }
 
 /**
- * Patient confirms the Medical Itinerary to unlock Accommodation & Visa
+ * Admin sets or updates the Medical Itinerary schedule and sends to patient
+ */
+export async function adminSetMedicalItinerary(caseId: string, itineraryNotes: string): Promise<void> {
+  await updatePatientCase(caseId, {
+    itinerary_notes: itineraryNotes,
+    itinerary_sent_to_patient: true,
+    itinerary_confirmed_by_patient: false,
+    itinerary_declined: false,
+    itinerary_decline_reason: '',
+  });
+}
+
+/**
+ * Patient confirms the Medical Itinerary to unlock Accommodation & Visa (Step 5)
  */
 export async function patientConfirmMedicalItinerary(caseId: string): Promise<void> {
   await updatePatientCase(caseId, {
     itinerary_confirmed_by_patient: true,
+    itinerary_declined: false,
     workflow_stage: 'Accommodation & Visa',
     stage: 'Accommodation & Visa',
   });
 }
 
 /**
- * Admin sets Accommodation & Visa arrangements
+ * Patient declines the itinerary schedule and requests changes
+ */
+export async function patientDeclineMedicalItinerary(caseId: string, reason: string): Promise<void> {
+  await updatePatientCase(caseId, {
+    itinerary_confirmed_by_patient: false,
+    itinerary_declined: true,
+    itinerary_decline_reason: reason,
+  });
+}
+
+/**
+ * Admin sets Accommodation & Visa arrangements and sends to patient
  */
 export async function adminSetAccommodationAndVisa(caseId: string, accommodationDetails: string, visaDetails: string): Promise<void> {
   await updatePatientCase(caseId, {
     accommodation_details: accommodationDetails,
     visa_details: visaDetails,
+    accommodation_visa_sent_to_patient: true,
     accommodation_visa_confirmed_by_patient: false,
+    accommodation_visa_declined: false,
+    accommodation_visa_decline_reason: '',
   });
 }
 
 /**
- * Patient confirms Accommodation & Visa to unlock Travel Preparation
+ * Patient confirms Accommodation & Visa to unlock Travel Preparation (Step 6)
  */
 export async function patientConfirmAccommodationAndVisa(caseId: string): Promise<void> {
   await updatePatientCase(caseId, {
     accommodation_visa_confirmed_by_patient: true,
+    accommodation_visa_declined: false,
     workflow_stage: 'Travel Preparation',
     stage: 'Travel Preparation',
   });
 }
 
 /**
- * Admin sets Travel / Flight preparation details
+ * Patient declines accommodation & visa and requests modifications
  */
-export async function adminSetTravelDetails(caseId: string, flightDetails: string): Promise<void> {
+export async function patientDeclineAccommodationAndVisa(caseId: string, reason: string): Promise<void> {
   await updatePatientCase(caseId, {
-    flight_details: flightDetails,
-    confirmed_by_patient: false,
+    accommodation_visa_confirmed_by_patient: false,
+    accommodation_visa_declined: true,
+    accommodation_visa_decline_reason: reason,
   });
 }
 
 /**
- * Patient confirms Travel Details to unlock Treatment & Recovery
+ * Admin sets Travel / Flight preparation details and sends to patient
+ */
+export async function adminSetTravelDetails(caseId: string, flightDetails: string): Promise<void> {
+  await updatePatientCase(caseId, {
+    flight_details: flightDetails,
+    travel_sent_to_patient: true,
+    confirmed_by_patient: false,
+    travel_declined: false,
+    travel_decline_reason: '',
+  });
+}
+
+/**
+ * Patient confirms Travel Details to unlock Treatment & Recovery (Step 7)
  */
 export async function patientConfirmTravel(caseId: string): Promise<void> {
   await updatePatientCase(caseId, {
     confirmed_by_patient: true,
+    travel_declined: false,
     workflow_stage: 'Treatment & Recovery',
     stage: 'Treatment & Recovery',
     status: 'Scheduled',
+  });
+}
+
+/**
+ * Patient declines travel details and requests itinerary modification
+ */
+export async function patientDeclineTravel(caseId: string, reason: string): Promise<void> {
+  await updatePatientCase(caseId, {
+    confirmed_by_patient: false,
+    travel_declined: true,
+    travel_decline_reason: reason,
   });
 }
 

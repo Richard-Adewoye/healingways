@@ -14,8 +14,8 @@ export default function PatientLoginForm() {
   const [identifier, setIdentifier] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     try {
-      const qEmail = searchParams?.get('email');
-      return qEmail || sessionStorage.getItem('hw_login_draft_email') || localStorage.getItem('hw_user_email') || '';
+      const sp = new URLSearchParams(window.location.search);
+      return sp.get('email') || sessionStorage.getItem('hw_login_draft_email') || localStorage.getItem('hw_user_email') || '';
     } catch {
       return '';
     }
@@ -50,14 +50,6 @@ export default function PatientLoginForm() {
     }
   });
 
-  // Sync if searchParams email changes later
-  useEffect(() => {
-    const qEmail = searchParams?.get('email');
-    if (qEmail && qEmail !== identifier) {
-      setIdentifier(qEmail);
-    }
-  }, [searchParams, identifier]);
-
   // Persist draft changes into sessionStorage
   const handleEmailChange = (val: string) => {
     setIdentifier(val);
@@ -77,17 +69,33 @@ export default function PatientLoginForm() {
 
   const handlePasswordChange = (val: string) => {
     setPassword(val);
+    if (errorMessage) {
+      setErrorMessage(null);
+      try { sessionStorage.removeItem('hw_login_error_msg'); } catch {}
+    }
     try {
       sessionStorage.setItem('hw_login_draft_password', val);
     } catch {}
   };
 
-  const handleLogin = async (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
-      if ('stopPropagation' in e && typeof e.stopPropagation === 'function') {
-        e.stopPropagation();
-      }
+    }
+
+    const cleanEmail = identifier.trim();
+    if (!cleanEmail) {
+      const msg = 'Please enter your email address.';
+      setErrorMessage(msg);
+      try { sessionStorage.setItem('hw_login_error_msg', msg); } catch {}
+      return;
+    }
+
+    if (!password) {
+      const msg = 'Please enter your password.';
+      setErrorMessage(msg);
+      try { sessionStorage.setItem('hw_login_error_msg', msg); } catch {}
+      return;
     }
 
     setLoading(true);
@@ -97,15 +105,6 @@ export default function PatientLoginForm() {
       sessionStorage.removeItem('hw_login_error_msg');
       sessionStorage.removeItem('hw_login_not_found_user');
     } catch {}
-
-    const cleanEmail = identifier.trim();
-    if (!cleanEmail) {
-      const msg = 'Please enter your email address.';
-      setErrorMessage(msg);
-      try { sessionStorage.setItem('hw_login_error_msg', msg); } catch {}
-      setLoading(false);
-      return;
-    }
 
     try {
       const res = await loginUser(cleanEmail, password);
@@ -118,11 +117,9 @@ export default function PatientLoginForm() {
           sessionStorage.removeItem('hw_login_error_msg');
         } catch {}
 
-        if (res.user.role === 'admin' || cleanEmail.toLowerCase().includes('admin')) {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
+        const destination = res.user.role === 'admin' || cleanEmail.toLowerCase().includes('admin') ? '/admin' : '/dashboard';
+        router.push(destination);
+        router.refresh();
         return;
       }
 
@@ -220,16 +217,7 @@ export default function PatientLoginForm() {
         )}
 
         {/* Login Form */}
-        <form
-          action="#"
-          method="POST"
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleLogin(e);
-          }}
-          className="space-y-4"
-        >
+        <form onSubmit={handleLogin} className="space-y-4">
           {/* Email Input */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-blue-900">
@@ -240,12 +228,6 @@ export default function PatientLoginForm() {
               required
               value={identifier}
               onChange={(e) => handleEmailChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleLogin(e);
-                }
-              }}
               placeholder="patient@healingways.com"
               disabled={loading}
               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
@@ -264,26 +246,15 @@ export default function PatientLoginForm() {
               required
               value={password}
               onChange={(e) => handlePasswordChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleLogin(e);
-                }
-              }}
               placeholder="••••••••"
               disabled={loading}
               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
             />
           </div>
 
-          {/* Main Submit Button: type="button" strictly prevents native browser form refresh */}
+          {/* Main Submit Button */}
           <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleLogin(e);
-            }}
+            type="submit"
             disabled={loading}
             className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center cursor-pointer mt-2"
           >

@@ -1,6 +1,14 @@
 import React from 'react';
+import Link from 'next/link';
 
-const quickLinks = ['About', 'Services', 'Partner Hospitals', 'Blog', 'FAQs'];
+const quickLinks = [
+  { name: 'About', href: '/about' },
+  { name: 'Services', href: '/services' },
+  { name: 'Partner Hospitals', href: '/partner-hospitals' },
+  { name: 'Blog', href: '/blog' },
+  { name: 'FAQs', href: '/faq' },
+  { name: 'Contact', href: '/contact' },
+];
 
 const servicesLinks = [
   'Medical Report Translation',
@@ -11,11 +19,11 @@ const servicesLinks = [
 ];
 
 const patientResources = [
-  'Book Consultation',
-  'My Portal',
-  'Privacy Policy',
-  'Terms of Use',
-  'Medical Disclaimer',
+  { name: 'Start Consultation', href: '/consultation' },
+  { name: 'Patient Login', href: '/login' },
+  { name: 'Privacy Policy', href: '#' },
+  { name: 'Terms of Use', href: '#' },
+  { name: 'Medical Disclaimer', href: '#' },
 ];
 
 export default function Footer() {
@@ -36,7 +44,11 @@ export default function Footer() {
             <h4 className="font-bold text-white uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-2 text-blue-200">
               {quickLinks.map((item, idx) => (
-                <li key={idx}><a href="#" className="hover:text-white transition">{item}</a></li>
+                <li key={idx}>
+                  <Link href={item.href} className="hover:text-white transition">
+                    {item.name}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -46,7 +58,11 @@ export default function Footer() {
             <h4 className="font-bold text-white uppercase tracking-wider">Services</h4>
             <ul className="space-y-2 text-blue-200">
               {servicesLinks.map((item, idx) => (
-                <li key={idx}><a href="#" className="hover:text-white transition">{item}</a></li>
+                <li key={idx}>
+                  <span className="hover:text-white transition cursor-default">
+                    {item}
+                  </span>
+                </li>
               ))}
             </ul>
           </div>
@@ -56,7 +72,11 @@ export default function Footer() {
             <h4 className="font-bold text-white uppercase tracking-wider">Patient Resources</h4>
             <ul className="space-y-2 text-blue-200">
               {patientResources.map((item, idx) => (
-                <li key={idx}><a href="#" className="hover:text-white transition">{item}</a></li>
+                <li key={idx}>
+                  <Link href={item.href} className="hover:text-white transition">
+                    {item.name}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
