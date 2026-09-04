@@ -152,14 +152,15 @@ export default function PatientLoginForm() {
     }
   };
 
-  const handleRedirectToSignup = (targetEmail: string) => {
+  const handleRedirectToConsultation = (targetEmail: string) => {
     try {
       sessionStorage.setItem('hw_signup_draft_email', targetEmail);
+      localStorage.setItem('hw_user_email', targetEmail);
       if (password) {
         sessionStorage.setItem('hw_signup_draft_password', password);
       }
     } catch {}
-    router.push(`/signup?email=${encodeURIComponent(targetEmail)}&from=login`);
+    router.push(`/consultation?email=${encodeURIComponent(targetEmail)}`);
   };
 
   return (
@@ -192,17 +193,17 @@ export default function PatientLoginForm() {
               <div className="space-y-1">
                 <h4 className="text-sm font-semibold text-amber-900">No account found</h4>
                 <p className="text-xs text-amber-800 leading-relaxed">
-                  We could not find an account associated with <strong className="font-semibold text-amber-950">{notFoundUser}</strong>.
-                  Please sign up to create your profile and get started.
+                  We could not find an account for <strong className="font-semibold text-amber-950">{notFoundUser}</strong>.
+                  New patients must first complete the consultation intake before account creation.
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => handleRedirectToSignup(notFoundUser)}
+              onClick={() => handleRedirectToConsultation(notFoundUser)}
               className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Create Account with This Email</span>
+              <span>Start Consultation to Create Account</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -274,10 +275,10 @@ export default function PatientLoginForm() {
           <p className="text-xs text-gray-600">
             Don&apos;t have an account?{' '}
             <Link
-              href={identifier ? `/signup?email=${encodeURIComponent(identifier)}&from=login` : '/signup'}
+              href={identifier ? `/consultation?email=${encodeURIComponent(identifier)}` : '/consultation'}
               className="font-bold text-emerald-700 hover:underline"
             >
-              Sign up
+              Start Consultation &amp; Sign Up
             </Link>
           </p>
           <p className="text-xs text-gray-500">
