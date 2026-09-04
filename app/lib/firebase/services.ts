@@ -612,19 +612,30 @@ export async function createPatientCase(caseData: Partial<PatientCase> & { user_
     user_id: userId,
   };
 
-  try {
-    const caseRef = doc(db, 'cases', fullCase.id);
-    await setDoc(caseRef, fullCase, { merge: true });
-  } catch (err) {
-    console.error('Error saving case to Firestore:', err);
-  }
-
-  // Also save to localStorage as backup
+  // 1. Immediately save to localStorage so the application is responsive and never blocked
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem('hw_active_case', JSON.stringify(fullCase));
       localStorage.setItem('hw_active_case_id', fullCase.id);
+      localStorage.setItem('hw_consultation_case_id', fullCase.id);
+      const casesRaw = localStorage.getItem('hw_all_cases');
+      const allCases: PatientCase[] = casesRaw ? JSON.parse(casesRaw) : [];
+      const idx = allCases.findIndex((c) => c.id === fullCase.id);
+      if (idx >= 0) {
+        allCases[idx] = fullCase;
+      } else {
+        allCases.unshift(fullCase);
+      }
+      localStorage.setItem('hw_all_cases', JSON.stringify(allCases));
     } catch {}
+  }
+
+  // 2. Persist to Firestore with a timeout so network lag never freezes the intake form
+  try {
+    const caseRef = doc(db, 'cases', fullCase.id);
+    await withTimeout(setDoc(caseRef, fullCase, { merge: true }), 2000, undefined);
+  } catch (err) {
+    console.warn('Firestore case save notice (proceeding with local backup):', err);
   }
 
   return fullCase;
@@ -635,14 +646,8 @@ export async function createPatientCase(caseData: Partial<PatientCase> & { user_
  */
 export async function updatePatientCase(caseId: string, updates: Partial<PatientCase>): Promise<void> {
   const now = new Date().toISOString();
-  try {
-    const caseRef = doc(db, 'cases', caseId);
-    await setDoc(caseRef, { ...updates, updated_at: now }, { merge: true });
-  } catch (err) {
-    console.error('Error updating patient case in Firestore:', err);
-  }
 
-  // Also update localStorage backup
+  // 1. Immediately update localStorage backup
   if (typeof window !== 'undefined') {
     try {
       const stored = localStorage.getItem('hw_active_case');
@@ -652,7 +657,24 @@ export async function updatePatientCase(caseId: string, updates: Partial<Patient
           localStorage.setItem('hw_active_case', JSON.stringify({ ...parsed, ...updates, updated_at: now }));
         }
       }
+      const casesRaw = localStorage.getItem('hw_all_cases');
+      if (casesRaw) {
+        const allCases: PatientCase[] = JSON.parse(casesRaw);
+        const idx = allCases.findIndex((c) => c.id === caseId);
+        if (idx >= 0) {
+          allCases[idx] = { ...allCases[idx], ...updates, updated_at: now };
+          localStorage.setItem('hw_all_cases', JSON.stringify(allCases));
+        }
+      }
     } catch {}
+  }
+
+  // 2. Persist update to Firestore with a timeout
+  try {
+    const caseRef = doc(db, 'cases', caseId);
+    await withTimeout(setDoc(caseRef, { ...updates, updated_at: now }, { merge: true }), 2000, undefined);
+  } catch (err) {
+    console.warn('Firestore case update notice (proceeding with local backup):', err);
   }
 }
 
@@ -660,14 +682,31 @@ export async function updatePatientCase(caseId: string, updates: Partial<Patient
  * Retrieves a single case by its ID
  */
 export async function getCaseById(caseId: string): Promise<PatientCase | null> {
+  // Check local backup first
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('hw_active_case');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.id === caseId) return parsed;
+      }
+      const casesRaw = localStorage.getItem('hw_all_cases');
+      if (casesRaw) {
+        const allCases: PatientCase[] = JSON.parse(casesRaw);
+        const found = allCases.find((c) => c.id === caseId);
+        if (found) return found;
+      }
+    } catch {}
+  }
+
   try {
     const caseRef = doc(db, 'cases', caseId);
-    const snap = await getDoc(caseRef);
-    if (snap.exists()) {
+    const snap = await withTimeout(getDoc(caseRef), 2500, null);
+    if (snap && snap.exists()) {
       return formatDoc<PatientCase>(snap);
     }
   } catch (err) {
-    console.error('Error fetching case by ID:', err);
+    console.warn('Error fetching case by ID from Firestore:', err);
   }
   return null;
 }
@@ -685,14 +724,14 @@ export async function getUserActiveCase(userId?: string | null, userEmail?: stri
     if (effectiveUid) {
       try {
         const q = query(casesRef, where('user_id', '==', effectiveUid), orderBy('created_at', 'desc'), limit(1));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
+        const snapshot = await withTimeout(getDocs(q), 2500, null);
+        if (snapshot && !snapshot.empty) {
           return formatDoc<PatientCase>(snapshot.docs[0]);
         }
       } catch {
         const qFallback = query(casesRef, where('user_id', '==', effectiveUid));
-        const snapshot = await getDocs(qFallback);
-        if (!snapshot.empty) {
+        const snapshot = await withTimeout(getDocs(qFallback), 2500, null);
+        if (snapshot && !snapshot.empty) {
           return formatDoc<PatientCase>(snapshot.docs[0]);
         }
       }
@@ -700,19 +739,19 @@ export async function getUserActiveCase(userId?: string | null, userEmail?: stri
 
     if (effectiveEmail) {
       const qEmail = query(casesRef, where('patient_email', '==', effectiveEmail), limit(1));
-      const snapshot = await getDocs(qEmail);
-      if (!snapshot.empty) {
+      const snapshot = await withTimeout(getDocs(qEmail), 2500, null);
+      if (snapshot && !snapshot.empty) {
         const found = formatDoc<PatientCase>(snapshot.docs[0]);
         if (effectiveUid && found.user_id !== effectiveUid) {
           try {
-            await updateDoc(doc(db, 'cases', found.id), { user_id: effectiveUid });
+            await withTimeout(updateDoc(doc(db, 'cases', found.id), { user_id: effectiveUid }), 1500, undefined);
           } catch {}
         }
         return found;
       }
     }
   } catch (err) {
-    console.error('Error fetching active case:', err);
+    console.warn('Error fetching active case from Firestore:', err);
   }
 
   // Check local active case backup if matching user
@@ -740,17 +779,35 @@ export async function getUserActiveCase(userId?: string | null, userEmail?: stri
 export async function getAllCasesForAdmin(): Promise<PatientCase[]> {
   try {
     const casesRef = collection(db, 'cases');
-    const snapshot = await getDocs(casesRef);
-    const cases: PatientCase[] = [];
-    snapshot.forEach((d) => {
-      cases.push(formatDoc<PatientCase>(d));
-    });
-    // Sort descending by created_at
-    return cases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const snapshot = await withTimeout(getDocs(casesRef), 3000, null);
+    if (snapshot && !snapshot.empty) {
+      const cases: PatientCase[] = [];
+      snapshot.forEach((d) => {
+        cases.push(formatDoc<PatientCase>(d));
+      });
+      // Sort descending by created_at
+      return cases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
   } catch (err) {
-    console.error('Error fetching admin cases from Firestore:', err);
-    return [];
+    console.warn('Error fetching admin cases from Firestore:', err);
   }
+
+  // Fallback to local cases if Firestore times out
+  if (typeof window !== 'undefined') {
+    try {
+      const casesRaw = localStorage.getItem('hw_all_cases');
+      if (casesRaw) {
+        const parsed: PatientCase[] = JSON.parse(casesRaw);
+        return parsed.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      }
+      const activeRaw = localStorage.getItem('hw_active_case');
+      if (activeRaw) {
+        return [JSON.parse(activeRaw)];
+      }
+    } catch {}
+  }
+
+  return [];
 }
 
 /**
@@ -1124,11 +1181,11 @@ export async function getTreatmentUpdatesForCase(caseId: string): Promise<Treatm
   try {
     const updatesRef = collection(db, 'treatment_updates');
     const q = query(updatesRef, where('caseId', '==', caseId), orderBy('createdAt', 'desc'));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
+    const snap = await withTimeout(getDocs(q), 2500, null);
+    if (snap && !snap.empty) {
       return snap.docs.map((d) => formatDoc<TreatmentUpdate>(d));
     }
-  } catch (err) {
+  } catch (_err) {
     // Fallback: load from case document directly
     const caseDoc = await getCaseById(caseId);
     if (caseDoc && caseDoc.treatment_updates) {

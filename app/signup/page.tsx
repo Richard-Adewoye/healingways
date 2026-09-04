@@ -11,7 +11,7 @@ function RegisterForm() {
   const router = useRouter();
 
   // Consultation must be completed before account creation
-  const [hasCompletedConsultation, setHasCompletedConsultation] = useState<boolean>(() => {
+  const [hasCompletedConsultation] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
       const sp = new URLSearchParams(window.location.search);
@@ -27,7 +27,7 @@ function RegisterForm() {
     }
   });
 
-  const [caseReference, setCaseReference] = useState<string>(() => {
+  const [caseReference] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     try {
       const sp = new URLSearchParams(window.location.search);

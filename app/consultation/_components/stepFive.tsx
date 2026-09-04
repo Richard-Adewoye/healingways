@@ -117,8 +117,13 @@ export default function StepFivePreferences({
         });
       }
     } catch (err: any) {
-      console.error('Error in Step 5:', err);
-      setErrorMsg(err.message || 'Failed to update preferences. Please try again.');
+      console.warn('Error in Step 5 (continuing):', err);
+      if (onNext) {
+        onNext({
+          ...formData,
+          caseId,
+        });
+      }
     } finally {
       setLoading(false);
     }

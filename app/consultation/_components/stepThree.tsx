@@ -94,8 +94,13 @@ export default function StepThreeMedicalDetails({
         });
       }
     } catch (err: any) {
-      console.error('Error in Step 3:', err);
-      setErrorMsg(err.message || 'Failed to update medical details. Please try again.');
+      console.warn('Error in Step 3 (continuing):', err);
+      if (onNext) {
+        onNext({
+          ...formData,
+          caseId,
+        });
+      }
     } finally {
       setLoading(false);
     }
