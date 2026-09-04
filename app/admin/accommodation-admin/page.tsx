@@ -5,7 +5,7 @@ import { Plus, MapPin } from 'lucide-react';
 
 interface AccommodationCardProps {
   image: string;
-  title: string;
+  title: string; 
   location: string;
   tags: string[];
   description: string;
