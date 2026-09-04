@@ -189,6 +189,14 @@ export default function ConsultationPage() {
       try {
         localStorage.setItem(CASE_KEY, finalCaseId);
         localStorage.setItem('hw_active_case_id', finalCaseId);
+        localStorage.setItem('hw_consultation_completed', 'true');
+        localStorage.setItem('hw_consultation_completed_case_id', finalCaseId);
+        if (formData.aboutYou?.email) {
+          localStorage.setItem('hw_user_email', formData.aboutYou.email);
+        }
+        if (formData.aboutYou?.fullName || formData.aboutYou?.patientName) {
+          localStorage.setItem('hw_user_fullname', formData.aboutYou.fullName || formData.aboutYou.patientName || '');
+        }
       } catch {}
     }
     setCurrentStep(7);
@@ -199,9 +207,12 @@ export default function ConsultationPage() {
   };
 
   if (currentStep === 7) {
+    const resolvedName = formData.aboutYou?.fullName || (typeof window !== 'undefined' ? localStorage.getItem('hw_user_fullname') || '' : '');
+    const resolvedEmail = formData.aboutYou?.email || (typeof window !== 'undefined' ? localStorage.getItem('hw_user_email') || '' : '');
     return (
       <StepSevenSuccess
-        userName={formData.aboutYou?.fullName}
+        userName={resolvedName}
+        userEmail={resolvedEmail}
         caseId={submittedCaseId || caseId}
         onGoHome={() => router.push('/')}
       />

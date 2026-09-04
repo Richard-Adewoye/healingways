@@ -1,43 +1,52 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
-import { registerUser, loginUser, getUserActiveCase } from '@/app/lib/firebase/services';
+import { registerUser, getUserActiveCase } from '@/app/lib/firebase/services';
 
 function RegisterForm() {
   const router = useRouter();
 
-  const [hasPriorConsultation, setHasPriorConsultation] = useState<boolean>(() => {
+  // Consultation must be completed before account creation
+  const [hasCompletedConsultation, setHasCompletedConsultation] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
       const sp = new URLSearchParams(window.location.search);
-      if (sp.get('from') === 'consultation' || sp.get('consultation') === 'done') return true;
-      const storedCase = localStorage.getItem('hw_active_case_id');
-      const storedEmail = localStorage.getItem('hw_user_email');
-      const draftForm = localStorage.getItem('hw_consultation_form_data');
-      return !!(storedCase || (storedEmail && storedEmail !== '') || draftForm);
+      const fromParam = sp.get('from') === 'consultation' || sp.get('consultation') === 'done';
+      const caseIdParam = sp.get('caseId');
+      const consultationSubmitted = localStorage.getItem('hw_consultation_completed') === 'true';
+      const storedCase = localStorage.getItem('hw_active_case_id') || localStorage.getItem('hw_consultation_case_id');
+      const hasStoredCase = !!storedCase && (storedCase.startsWith('case_') || storedCase.startsWith('HW-'));
+
+      return fromParam || !!caseIdParam || (consultationSubmitted && hasStoredCase);
     } catch {
       return false;
     }
   });
 
-  const [showDirectSignup, setShowDirectSignup] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
+  const [caseReference, setCaseReference] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
     try {
       const sp = new URLSearchParams(window.location.search);
-      return sp.get('bypass') === 'true' || sp.get('from') === 'login';
+      return sp.get('caseId') || localStorage.getItem('hw_active_case_id') || localStorage.getItem('hw_consultation_case_id') || '';
     } catch {
-      return false;
+      return '';
     }
   });
 
   const [fullName, setFullName] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     try {
-      return sessionStorage.getItem('hw_signup_draft_fullname') || '';
+      const sp = new URLSearchParams(window.location.search);
+      return (
+        sp.get('name') ||
+        sessionStorage.getItem('hw_signup_draft_fullname') ||
+        localStorage.getItem('hw_user_fullname') ||
+        ''
+      );
     } catch {
       return '';
     }
@@ -94,19 +103,6 @@ function RegisterForm() {
       return sessionStorage.getItem('hw_signup_error_msg') || null;
     } catch {
       return null;
-    }
-  });
-
-  const [fromLoginPrompt, setFromLoginPrompt] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const sp = new URLSearchParams(window.location.search);
-      const isFromLogin = sp.get('from') === 'login';
-      const qEmail = sp.get('email');
-      const notFound = sessionStorage.getItem('hw_login_not_found_user');
-      return !!(isFromLogin || qEmail || notFound);
-    } catch {
-      return false;
     }
   });
 
@@ -256,51 +252,41 @@ function RegisterForm() {
         </div>
 
         {/* Check if new user needs to fill consultation first */}
-        {!hasPriorConsultation && !showDirectSignup ? (
+        {!hasCompletedConsultation ? (
           <div className="space-y-5">
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-2 leading-relaxed">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-2.5 leading-relaxed">
               <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
                 <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                Initial Consultation Required
+                Step 1: Consultation Intake Required
               </div>
               <p>
-                To provide tailored clinical evaluations and assign a dedicated case coordinator, all new patients must first fill out the <strong>Consultation Intake</strong> form.
+                To provide tailored clinical evaluations, match accredited partner hospitals, and assign your dedicated case coordinator, all new patients must first complete the <strong>Consultation Intake</strong> form.
               </p>
               <p className="text-emerald-800">
-                Starting your consultation will <strong>automatically create and verify your secure patient account</strong> in one step!
+                Completing the consultation will immediately unlock account creation so you can track your case file and clinical itinerary.
               </p>
             </div>
 
             <Link
-              href="/consultation"
+              href={email ? `/consultation?email=${encodeURIComponent(email)}` : '/consultation'}
               className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Start Consultation & Create Account</span>
+              <span>Start Consultation Intake</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
-
-            <div className="pt-2 text-center">
-              <button
-                type="button"
-                onClick={() => setShowDirectSignup(true)}
-                className="text-xs text-slate-500 hover:text-slate-800 underline transition-colors cursor-pointer"
-              >
-                Already submitted a consultation or have a Case ID? Direct Sign Up
-              </button>
-            </div>
           </div>
         ) : (
           <>
-            {/* Informative Banner when directed from Login */}
-            {fromLoginPrompt && (
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900 leading-relaxed animate-fadeIn">
-                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold block text-emerald-950">New Account Setup</span>
-                  No account was found for <strong className="text-emerald-950">{email || 'your email'}</strong>. Complete the quick form below to create your account.
-                </div>
+            {/* Informative Banner when consultation is completed */}
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900 leading-relaxed animate-fadeIn">
+              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold block text-emerald-950">
+                  Step 2: Finalize Your Account {caseReference ? `• Case ${caseReference}` : ''}
+                </span>
+                Consultation intake received! Enter a password below to finalize your account and access your patient journey dashboard.
               </div>
-            )}
+            </div>
 
             {/* Error Alert Box */}
             {errorMessage && (

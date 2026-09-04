@@ -76,16 +76,32 @@ export default function StepOneAboutYou({ onNext, initialData = {} }: StepOnePro
   });
 
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
+    try {
+      const sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const qEmail = sp?.get('email') || (typeof window !== 'undefined' ? (sessionStorage.getItem('hw_signup_draft_email') || localStorage.getItem('hw_user_email')) : '');
+      const qName = sp?.get('name') || (typeof window !== 'undefined' ? (sessionStorage.getItem('hw_signup_draft_fullname') || localStorage.getItem('hw_user_fullname')) : '');
+      
       setFormData((prev) => ({
         ...prev,
-        consultationFor: initialData.consultationFor || prev.consultationFor || 'Myself',
-        fullName: initialData.fullName || prev.fullName || '',
-        patientName: initialData.patientName || prev.patientName || '',
-        email: initialData.email || prev.email || '',
-        phone: initialData.phone || prev.phone || '',
-        country: initialData.country || prev.country || '',
+        consultationFor: initialData?.consultationFor || prev.consultationFor || 'Myself',
+        fullName: initialData?.fullName || prev.fullName || qName || '',
+        patientName: initialData?.patientName || prev.patientName || '',
+        email: initialData?.email || prev.email || qEmail || '',
+        phone: initialData?.phone || prev.phone || '',
+        country: initialData?.country || prev.country || '',
       }));
+    } catch {
+      if (initialData && Object.keys(initialData).length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          consultationFor: initialData.consultationFor || prev.consultationFor || 'Myself',
+          fullName: initialData.fullName || prev.fullName || '',
+          patientName: initialData.patientName || prev.patientName || '',
+          email: initialData.email || prev.email || '',
+          phone: initialData.phone || prev.phone || '',
+          country: initialData.country || prev.country || '',
+        }));
+      }
     }
   }, [initialData]);
 

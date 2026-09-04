@@ -8,6 +8,7 @@ import { getUserActiveCase, getCaseById } from '@/app/lib/firebase/services';
 
 interface StepSevenSuccessProps {
   userName?: string;
+  userEmail?: string;
   caseId?: string;
   onGoToLogin?: () => void;
   onGoHome?: () => void;
@@ -15,11 +16,19 @@ interface StepSevenSuccessProps {
 
 export default function StepSevenSuccess({
   userName: initialUserName,
+  userEmail: initialUserEmail,
   caseId: initialCaseId,
   onGoToLogin,
   onGoHome,
 }: StepSevenSuccessProps) {
   const [userName, setUserName] = useState<string>(initialUserName || 'Patient');
+  const [userEmail, setUserEmail] = useState<string>(() => {
+    if (initialUserEmail) return initialUserEmail;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hw_user_email') || '';
+    }
+    return '';
+  });
   const [caseReference, setCaseReference] = useState<string>(initialCaseId || '');
   const [loading, setLoading] = useState<boolean>(!initialUserName || !initialCaseId);
 
@@ -93,10 +102,10 @@ export default function StepSevenSuccess({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 relative z-50">
           <Link
-            href="/signup?from=consultation"
+            href={`/signup?from=consultation&caseId=${encodeURIComponent(caseReference || '')}&email=${encodeURIComponent(userEmail || '')}&name=${encodeURIComponent(userName !== 'Patient' ? userName : '')}`}
             className="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Create Patient Account</span>
+            <span>Proceed to Create Account</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
