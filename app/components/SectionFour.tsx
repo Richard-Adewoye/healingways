@@ -40,13 +40,13 @@ export default function SectionFour() {
     <section className="py-16 sm:py-20 lg:py-24 bg-slate-50 border-b border-slate-200/60" id="services">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div>
-          <span className="text-xs font-bold tracking-wider text-blue-700 uppercase bg-blue-50 px-3 py-1 rounded-md">
+          <span className="text-xs sm:text-sm font-extrabold tracking-wider text-blue-900 uppercase bg-blue-100/90 px-3.5 py-1.5 rounded-lg border border-blue-200/60">
             WHAT WE DO
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight mt-3">
+          <h2 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-black text-blue-950 tracking-tight mt-3">
             Support for every stage of your healthcare journey
           </h2>
-          <p className="text-slate-600 text-base sm:text-lg max-w-2xl mt-2 leading-relaxed">
+          <p className="text-slate-700 text-base sm:text-lg lg:text-xl max-w-2xl mt-2 leading-relaxed font-normal">
             We don't sell isolated packages — our clinical team activates tailored support based on your unique case file.
           </p>
         </div>
@@ -57,19 +57,19 @@ export default function SectionFour() {
             return (
               <div 
                 key={idx} 
-                className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group"
+                className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group"
               >
                 <div className="space-y-4">
                   <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-700 group-hover:bg-emerald-100 transition-colors">
                     <Icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-900 transition-colors">{srv.title}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{srv.description}</p>
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-950 transition-colors">{srv.title}</h3>
+                  <p className="text-base text-slate-700 leading-relaxed font-normal">{srv.description}</p>
                 </div>
                 <div className="pt-6">
                   <Link 
                     href="/services" 
-                    className="text-sm font-bold text-blue-700 hover:text-blue-900 inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden rounded-md"
+                    className="text-base font-bold text-blue-800 hover:text-blue-950 inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden rounded-md"
                   >
                     Learn more <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                   </Link>
@@ -82,7 +82,7 @@ export default function SectionFour() {
         <div className="text-center pt-4">
           <Link 
             href="/services" 
-            className="inline-flex items-center justify-center px-6 py-3.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-emerald-800 font-bold text-sm rounded-xl border border-emerald-600 shadow-xs hover:shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
+            className="inline-flex items-center justify-center px-6 py-3.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-emerald-900 font-bold text-base rounded-xl border-2 border-emerald-600 shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
           >
             View All Services
           </Link>

@@ -18,41 +18,41 @@ export default function HeroSection() {
           <div className="lg:col-span-6 space-y-6">
             {/* Top Tag Badge */}
             <div>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-900 text-xs font-bold rounded-full shadow-xs tracking-wide">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-emerald-950 text-xs sm:text-sm font-extrabold rounded-full shadow-md tracking-wide">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                 Healthcare Navigation, Simplified
               </span>
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[2.85rem] font-extrabold leading-[1.2] text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[2.85rem] font-black leading-[1.2] text-white tracking-tight drop-shadow-sm">
               We provide specialized guidance to help you and your family make better healthcare decisions.
             </h1>
 
-            <p className="text-blue-100 text-base sm:text-lg leading-relaxed max-w-xl">
+            <p className="text-slate-100 text-base sm:text-lg lg:text-xl leading-relaxed max-w-xl font-normal">
               From specialist placement and clinical review to travel logistics and recovery monitoring — compassionate, clear guidance every step of the way.
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-2">
+            <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link
                 href="/consultation"
                 id="hero-start-consultation-btn"
-                className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-sm sm:text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
+                className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
               >
                 Start Consultation
               </Link>
               <Link
                 href="/login"
                 id="hero-patient-login-btn"
-                className="px-6 py-3.5 bg-white hover:bg-slate-100 active:bg-slate-200 text-blue-950 font-bold text-sm sm:text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
+                className="px-6 py-3.5 bg-white hover:bg-slate-100 active:bg-slate-200 text-slate-950 font-bold text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
               >
                 Patient Login
               </Link>
               <Link
                 href="/services"
                 id="hero-explore-services-btn"
-                className="px-6 py-3.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-semibold text-sm sm:text-base rounded-xl border border-white/30 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
+                className="px-6 py-3.5 bg-white/20 hover:bg-white/30 active:bg-white/35 text-white font-bold text-base rounded-xl border-2 border-white/40 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
               >
                 Explore Services
               </Link>
@@ -75,24 +75,24 @@ export default function HeroSection() {
               />
 
               {/* Floating Node Tag 1 (Left side) */}
-              <div className="absolute -left-2 sm:-left-6 bottom-20 sm:bottom-24 z-20 flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-slate-950/85 backdrop-blur-md rounded-xl border border-white/20 shadow-xl">
-                <span className="text-xs text-white font-medium whitespace-nowrap">
+              <div className="absolute -left-2 sm:-left-6 bottom-20 sm:bottom-24 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 bg-slate-950/95 backdrop-blur-md rounded-xl border border-white/30 shadow-2xl">
+                <span className="text-xs sm:text-sm text-white font-bold whitespace-nowrap tracking-wide">
                   You don't have to figure it out alone
                 </span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#3cd070] shrink-0 animate-pulse" />
               </div>
 
               {/* Floating Node Tag 2 (Top right) */}
-              <div className="absolute -right-2 sm:-right-6 top-6 sm:top-8 z-20 flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-slate-950/85 backdrop-blur-md rounded-xl border border-white/20 shadow-xl">
-                <span className="text-xs text-white font-medium whitespace-nowrap">
+              <div className="absolute -right-2 sm:-right-6 top-6 sm:top-8 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 bg-slate-950/95 backdrop-blur-md rounded-xl border border-white/30 shadow-2xl">
+                <span className="text-xs sm:text-sm text-white font-bold whitespace-nowrap tracking-wide">
                   HealingWays makes connection
                 </span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#3cd070] shrink-0 animate-pulse" />
               </div>
 
               {/* Floating Node Tag 3 (Bottom right) */}
-              <div className="absolute right-0 sm:right-2 -bottom-4 z-20 flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-slate-950/85 backdrop-blur-md rounded-xl border border-white/20 shadow-xl">
-                <span className="text-xs text-white font-medium whitespace-nowrap">
+              <div className="absolute right-0 sm:right-2 -bottom-4 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 bg-slate-950/95 backdrop-blur-md rounded-xl border border-white/30 shadow-2xl">
+                <span className="text-xs sm:text-sm text-white font-bold whitespace-nowrap tracking-wide">
                   Seamless medical travel navigation
                 </span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#3cd070] shrink-0 animate-pulse" />

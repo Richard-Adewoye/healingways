@@ -8,19 +8,19 @@ export default function AboutHero() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
           <div className="space-y-6">
-            <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-md">
+            <span className="inline-block px-3.5 py-1.5 bg-emerald-100 text-emerald-950 text-xs sm:text-sm font-extrabold rounded-lg border border-emerald-200">
               About HealingWays
             </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-900 leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-blue-950 leading-tight tracking-tight">
               More than a healthcare service — a trusted guide on your journey to better health.
             </h1>
-            <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+            <p className="text-slate-700 text-base sm:text-lg lg:text-xl leading-relaxed font-normal">
               We help patients and families make confident healthcare decisions by connecting them with trusted hospitals and specialists, locally or internationally, guiding every step with compassion, experience, and personalized support.
             </p>
             <div className="pt-2">
               <a
                 href="/consultation"
-                className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition"
+                className="inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all text-base cursor-pointer"
               >
                 Book a Consultation
               </a>

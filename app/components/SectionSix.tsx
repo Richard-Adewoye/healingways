@@ -35,13 +35,13 @@ export default function SectionSix() {
     <section className="py-16 sm:py-20 lg:py-24 bg-slate-50 border-b border-slate-200/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div>
-          <span className="text-xs font-bold tracking-wider text-blue-700 uppercase bg-blue-50 px-3 py-1 rounded-md">
+          <span className="text-xs sm:text-sm font-extrabold tracking-wider text-blue-900 uppercase bg-blue-100/90 px-3.5 py-1.5 rounded-lg border border-blue-200/60">
             OUR NETWORK
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight mt-3">
+          <h2 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-black text-blue-950 tracking-tight mt-3">
             Trusted healthcare connections worldwide
           </h2>
-          <p className="text-slate-600 text-base sm:text-lg max-w-xl mt-2 leading-relaxed">
+          <p className="text-slate-700 text-base sm:text-lg lg:text-xl max-w-xl mt-2 leading-relaxed font-normal">
             A sample of certified partner hospitals. Recommendations are strictly matched to your clinical case file.
           </p>
         </div>
@@ -50,7 +50,7 @@ export default function SectionSix() {
           {hospitals.map((item, idx) => (
             <div 
               key={idx} 
-              className="bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group"
+              className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group"
             >
               <div>
                 <div className="relative h-52 w-full overflow-hidden bg-slate-100">
@@ -60,21 +60,21 @@ export default function SectionSix() {
                     fill 
                     className="object-cover group-hover:scale-105 transition-transform duration-300" 
                   />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-blue-900 font-bold text-xs px-3 py-1 rounded-full shadow-xs">
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-blue-950 font-extrabold text-xs sm:text-sm px-3.5 py-1 rounded-full shadow-md border border-slate-200">
                     {item.region}
                   </div>
                 </div>
-                <div className="p-6 space-y-3">
-                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-900 transition-colors">{item.title}</h3>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="p-6 sm:p-7 space-y-3">
+                  <h3 className="text-xl font-bold text-slate-950 group-hover:text-blue-950 transition-colors">{item.title}</h3>
+                  <div className="flex items-center gap-1.5 text-sm text-slate-700 font-bold">
+                    <MapPin className="w-4 h-4 text-emerald-600" />
                     <span>{item.location}</span>
                   </div>
-                  <p className="text-sm text-slate-600 leading-relaxed pt-1">{item.description}</p>
+                  <p className="text-base text-slate-700 leading-relaxed font-normal pt-1">{item.description}</p>
                   
                   <div className="flex flex-wrap gap-2 pt-3">
                     {item.tags.map((t, tIdx) => (
-                      <span key={tIdx} className="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-md">
+                      <span key={tIdx} className="text-xs sm:text-sm bg-slate-100 border border-slate-200 text-slate-800 font-bold px-3 py-1 rounded-lg">
                         {t}
                       </span>
                     ))}
@@ -82,10 +82,10 @@ export default function SectionSix() {
                 </div>
               </div>
 
-              <div className="p-6 pt-0">
+              <div className="p-6 sm:p-7 pt-0">
                 <Link 
                   href="/partner-hospitals" 
-                  className="text-sm font-bold text-blue-700 hover:text-blue-900 inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden rounded-md"
+                  className="text-base font-bold text-blue-800 hover:text-blue-950 inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden rounded-md"
                 >
                   View Facility Profile <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Link>
@@ -97,7 +97,7 @@ export default function SectionSix() {
         <div className="text-center pt-4">
           <Link 
             href="/partner-hospitals" 
-            className="inline-flex items-center justify-center px-6 py-3.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-emerald-800 font-bold text-sm rounded-xl border border-emerald-600 shadow-xs hover:shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
+            className="inline-flex items-center justify-center px-6 py-3.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-emerald-900 font-bold text-base rounded-xl border-2 border-emerald-600 shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
           >
             View Our Global Hospital Network
           </Link>

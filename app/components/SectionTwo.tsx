@@ -28,12 +28,12 @@ export default function SectionTwo() {
             return (
               <div 
                 key={idx} 
-                className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex items-center space-x-4"
+                className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all flex items-center space-x-4"
               >
                 <div className="p-3 bg-emerald-50 rounded-xl text-emerald-700 shrink-0">
                   <Icon className="w-6 h-6" />
                 </div>
-                <span className="font-bold text-slate-800 text-sm">{item.title}</span>
+                <span className="font-bold text-slate-900 text-base">{item.title}</span>
               </div>
             );
           })}
@@ -53,15 +53,15 @@ export default function SectionTwo() {
           </div>
 
           <div className="space-y-6">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-black text-blue-950 tracking-tight leading-tight">
               Confident decisions, guided by people who know the way
             </h2>
-            <p className="text-slate-600 text-base sm:text-lg leading-relaxed">
+            <p className="text-slate-700 text-base sm:text-lg lg:text-xl leading-relaxed font-normal">
               From your first conversation to your final follow-up, our team coordinates every detail of your care — so you can focus on getting better, not on logistics.
             </p>
-            <ul className="space-y-3.5">
+            <ul className="space-y-4">
               {checkPoints.map((pt, idx) => (
-                <li key={idx} className="flex items-start space-x-3 text-slate-700 text-sm sm:text-base">
+                <li key={idx} className="flex items-start space-x-3 text-slate-800 text-base font-semibold">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                   <span>{pt}</span>
                 </li>
@@ -70,7 +70,7 @@ export default function SectionTwo() {
             <div className="pt-2">
               <Link 
                 href="/consultation"
-                className="inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
               >
                 Book a Consultation
               </Link>

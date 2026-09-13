@@ -25,27 +25,27 @@ export default function SectionNine() {
 
             {/* Right Call To Action Content */}
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 text-blue-200 text-xs font-bold rounded-full backdrop-blur-xs">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/20 text-sky-100 text-xs sm:text-sm font-extrabold rounded-full backdrop-blur-xs border border-white/20">
                 Dedicated Care Coordinators
               </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-tight tracking-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-tight tracking-tight text-white">
                 We operate 24/7 support for all our patients throughout their medical journey.
               </h2>
-              <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
+              <p className="text-sky-50 text-base sm:text-lg leading-relaxed font-normal">
                 Speak directly with clinical advisors who understand hospital protocols, emergency responses, and cross-border medical scheduling.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link
                   href="/consultation"
-                  className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-sm sm:text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all inline-flex items-center justify-center cursor-pointer"
+                  className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all inline-flex items-center justify-center cursor-pointer"
                 >
                   Book Consultation
                 </Link>
                 <Link
                   href="/contact"
-                  className="px-6 py-3.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-bold text-sm sm:text-base rounded-xl border border-white/30 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-6 py-3.5 bg-white/20 hover:bg-white/30 active:bg-white/35 text-white font-bold text-base rounded-xl border-2 border-white/40 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <PhoneCall className="w-4 h-4" />
+                  <PhoneCall className="w-5 h-5" />
                   <span>Call Support</span>
                 </Link>
               </div>

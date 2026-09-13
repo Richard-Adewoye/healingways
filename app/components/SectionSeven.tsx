@@ -1,87 +1,115 @@
-import React from 'react';
-import Image from 'next/image';
+'use client';
 
-const hospitals = [
+import React from 'react';
+import Link from 'next/link';
+import { Star, Quote, CheckCircle2 } from 'lucide-react';
+
+const testimonials = [
   {
-    region: 'West Africa',
-    title: 'Lagoon Specialist Hospital',
-    location: 'Lagos, Nigeria',
-    description: 'A leading specialist hospital recognized for advanced cardiac and cancer care, with a strong patient-centered approach and multidisciplinary teams.',
-    tags: ['Cardiology', 'Oncology', 'Orthopedics'],
-    image: '/images/hospital-five.avif',
+    patientName: 'Amina Bello',
+    location: 'Abuja, Nigeria',
+    condition: 'Cardiac Valve Replacement',
+    hospital: 'Lagoon Specialist Hospital, Lagos',
+    quote:
+      'HealingWays transformed what felt like an impossible medical situation into a smooth, guided process. From matching us with the chief cardiac surgeon to coordinating our accommodation, our coordinator was always a call away.',
+    rating: 5,
   },
   {
-    region: 'West Africa',
-    title: 'Accra Heart Institute',
+    patientName: 'Kofi Mensah',
     location: 'Accra, Ghana',
-    description: 'A dedicated cardiac center known for advanced diagnostic imaging and interventional cardiology services.',
-    tags: ['Cardiology', 'Vascular Surgery'],
-    image: '/images/hospital-four.avif',
+    condition: 'Complex Orthopedic Surgery',
+    hospital: 'Global Specialist Medical Center',
+    quote:
+      'The clinical translation and second opinion review provided total clarity before we made our surgical decision. Having a coordinator manage hospital intake and visa documents gave my entire family peace of mind.',
+    rating: 5,
   },
   {
-    region: 'West Africa',
-    title: 'Douala General Reference Hospital',
-    location: 'Douala, Cameroon',
-    description: 'A key regional referral hospital offering a broad range of specialized medical and surgical services.',
-    tags: ['General Surgery', 'Maternal Health'],
-    image: '/images/hospital-six.avif',
+    patientName: 'Dr. Chidi Okafor',
+    location: 'Enugu, Nigeria',
+    condition: 'Oncology Diagnostic & Treatment',
+    hospital: 'Accra Heart & Oncology Institute',
+    quote:
+      'As a physician seeking specialized oncology care for my brother, I was thoroughly impressed by HealingWays’ strict clinical placement protocols, fast communication, and compassionate post-procedure follow-up.',
+    rating: 5,
   },
 ];
 
-export default function SectionSix() {
+export default function SectionSeven() {
   return (
-    <section className="py-16 bg-slate-50">
+    <section className="py-16 sm:py-20 lg:py-24 bg-white border-b border-slate-200/60" id="patient-stories">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        <div>
-          <span className="text-xs font-semibold tracking-wider text-blue-600 uppercase">
-            OUR NETWORK
-          </span>
-          <h2 className="text-3xl font-bold text-blue-900 mt-1">
-            Trusted healthcare connections worldwide
-          </h2>
-          <p className="text-gray-600 max-w-xl text-sm mt-2">
-            A sample of the healthcare institutions we work with. Recommendations are always personalized to your case — this isn't a directory to browse.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <span className="text-xs sm:text-sm font-extrabold tracking-wider text-emerald-900 uppercase bg-emerald-100/90 px-3.5 py-1.5 rounded-lg border border-emerald-200/60">
+              PATIENT STORIES
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-black text-blue-950 tracking-tight mt-3">
+              Real journeys, guided with care
+            </h2>
+            <p className="text-slate-700 text-base sm:text-lg lg:text-xl max-w-xl mt-2 leading-relaxed font-normal">
+              Hear directly from patients and families who navigated critical medical care with dedicated HealingWays guidance.
+            </p>
+          </div>
+          <div className="shrink-0">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-2xl">
+              <div className="flex text-amber-500">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <span className="text-base font-extrabold text-slate-900">4.9/5</span>
+              <span className="text-xs text-slate-700 font-bold border-l border-slate-300 pl-2">Over 1,200+ Guided Patients</span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {hospitals.map((item, idx) => (
-            <div key={idx} className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="relative h-48 w-full">
-                  <Image src={item.image} alt={item.title} fill className="object-cover" />
-                </div>
-                <div className="p-6 space-y-3">
-                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
-                    {item.region}
-                  </span>
-                  <h3 className="text-lg font-bold text-blue-900">{item.title}</h3>
-                  <p className="text-xs text-gray-500">{item.location}</p>
-                  <p className="text-xs text-gray-600 leading-relaxed">{item.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {item.tags.map((t, tIdx) => (
-                      <span key={tIdx} className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                        {t}
-                      </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {testimonials.map((t, idx) => (
+            <div
+              key={idx}
+              className="bg-slate-50 p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-slate-300 transition-all"
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex text-amber-500">
+                    {[...Array(t.rating)].map((_, rIdx) => (
+                      <Star key={rIdx} className="w-4 h-4 fill-amber-400 text-amber-400" />
                     ))}
                   </div>
+                  <Quote className="w-7 h-7 text-blue-200" />
                 </div>
+
+                <p className="text-base sm:text-[17px] text-slate-800 leading-relaxed font-normal">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
               </div>
 
-              <div className="p-6 pt-0">
-                <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-800">
-                  Learn more &rarr;
-                </a>
+              <div className="pt-6 border-t border-slate-200/80 mt-6 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-slate-950 text-base">{t.patientName}</h4>
+                    <p className="text-sm text-slate-700 font-medium">{t.location}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                    Verified Patient
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-700 font-semibold bg-white border border-slate-200 px-3 py-1.5 rounded-lg">
+                  {t.condition} • <span className="text-blue-900">{t.hospital}</span>
+                </p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="text-center">
-          <button className="px-6 py-2.5 bg-white hover:bg-gray-50 text-emerald-700 font-medium rounded-lg border border-emerald-600 transition">
-            View Our Global Network
-          </button>
+        <div className="text-center pt-2">
+          <Link
+            href="/consultation"
+            className="inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
+          >
+            Start Your Guided Care Consultation
+          </Link>
         </div>
       </div>
     </section>

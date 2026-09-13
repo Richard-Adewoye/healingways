@@ -27,11 +27,18 @@
 
   body {
     background-color: var(--background);
-    color: var(--foreground);
+    color: #0f172a;
+    font-size: 16px;
+    line-height: 1.6;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  p {
+    color: #334155;
+    line-height: 1.65;
   }
 
   /* Accessible interactive focus rings */
