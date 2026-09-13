@@ -4,55 +4,61 @@ import Link from 'next/link';
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-[#033ca8] via-[#0444c5] to-[#012a80] text-white py-16 sm:py-20 lg:py-24">
-      {/* Top-left green decorative circle */}
-      <div className="absolute -top-24 -left-24 w-72 h-72 sm:w-96 sm:h-96 bg-[#34a86b] rounded-full pointer-events-none z-0 opacity-90" />
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#004bbd] via-[#0043b2] to-[#00388d] text-white pt-12 sm:pt-16 lg:pt-20 pb-12 sm:pb-0">
+      {/* Top-left green organic decorative shape */}
+      <div 
+        className="absolute -top-16 -left-16 w-56 h-56 sm:w-72 sm:h-72 lg:w-80 lg:h-80 bg-[#2ea866] rounded-full pointer-events-none z-0 opacity-95"
+        aria-hidden="true" 
+      />
 
-      {/* Bottom-right lighter blue decorative ring element */}
-      <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] sm:w-[650px] sm:h-[650px] bg-[#1a6eff] rounded-full pointer-events-none z-0 opacity-70" />
+      {/* Sweeping decorative blue ribbon path in the background */}
+      <svg
+        className="absolute right-0 bottom-0 w-[550px] sm:w-[700px] lg:w-[850px] h-[360px] sm:h-[450px] pointer-events-none z-0"
+        viewBox="0 0 850 450"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M 850 300 C 650 380, 480 340, 360 220 C 280 140, 200 120, 100 180"
+          stroke="#2087fa"
+          strokeWidth="64"
+          strokeLinecap="round"
+          opacity="0.55"
+        />
+      </svg>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Content Column */}
-          <div className="lg:col-span-6 space-y-6">
+          <div className="lg:col-span-6 space-y-6 sm:space-y-8 py-4 lg:py-12">
             {/* Top Tag Badge */}
             <div>
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-emerald-950 text-xs sm:text-sm font-extrabold rounded-full shadow-md tracking-wide">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                Healthcare Navigation, Simplified
-              </span>
+              <div className="inline-block bg-white px-3.5 py-1.5 rounded-sm shadow-xs">
+                <span className="text-[#1a5b46] font-semibold text-xs sm:text-sm tracking-wide">
+                  Healthcare Navigation, Simplified
+                </span>
+              </div>
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[2.85rem] font-black leading-[1.2] text-white tracking-tight drop-shadow-sm">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-white leading-[1.18] tracking-tight max-w-2xl drop-shadow-xs">
               We provide specialized guidance to help you and your family make better healthcare decisions.
             </h1>
 
-            <p className="text-slate-100 text-base sm:text-lg lg:text-xl leading-relaxed max-w-xl font-normal">
-              From specialist placement and clinical review to travel logistics and recovery monitoring — compassionate, clear guidance every step of the way.
-            </p>
-
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            <div className="flex flex-wrap items-center gap-4 pt-2 sm:pt-4">
               <Link
                 href="/consultation"
                 id="hero-start-consultation-btn"
-                className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
+                className="px-7 py-3.5 bg-gradient-to-b from-[#38b273] to-[#2fa458] hover:from-[#32a468] hover:to-[#28964f] active:from-[#2a8b49] active:to-[#237d40] text-white font-bold text-sm sm:text-base rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden"
               >
                 Start Consultation
               </Link>
               <Link
-                href="/login"
-                id="hero-patient-login-btn"
-                className="px-6 py-3.5 bg-white hover:bg-slate-100 active:bg-slate-200 text-slate-950 font-bold text-base rounded-xl shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
-              >
-                Patient Login
-              </Link>
-              <Link
                 href="/services"
                 id="hero-explore-services-btn"
-                className="px-6 py-3.5 bg-white/20 hover:bg-white/30 active:bg-white/35 text-white font-bold text-base rounded-xl border-2 border-white/40 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden transition-all flex items-center justify-center cursor-pointer"
+                className="px-7 py-3.5 bg-[#dbe8f9] hover:bg-[#d0e0f5] active:bg-[#c2d7f0] text-[#2c8d56] font-bold text-sm sm:text-base rounded-2xl shadow-xs transition-all flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-hidden"
               >
                 Explore Services
               </Link>
@@ -60,42 +66,45 @@ export default function HeroSection() {
           </div>
 
           {/* Right Image Graphic & Tooltips */}
-          <div className="lg:col-span-6 relative flex justify-center items-center mt-6 lg:mt-0">
-            {/* Background highlight glow */}
-            <div className="absolute w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] bg-[#1e75ff]/80 rounded-full z-0 filter blur-2xl opacity-60 pointer-events-none" />
+          <div className="lg:col-span-6 relative flex justify-center items-end mt-4 lg:mt-0">
+            {/* Crisp vibrant blue circle backdrop framing the patient */}
+            <div 
+              className="absolute top-4 sm:top-6 lg:top-8 w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[480px] lg:h-[480px] bg-[#0070f3] rounded-full z-0 shadow-lg pointer-events-none"
+              aria-hidden="true" 
+            />
 
-            <div className="relative z-10 w-full max-w-lg flex justify-center items-center">
+            <div className="relative z-10 w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[520px] flex justify-center items-end">
               <Image
                 src="/images/hero-image.png"
                 alt="Patient guided by HealingWays healthcare service"
-                width={450}
-                height={530}
-                className="w-full h-auto max-w-[360px] sm:max-w-[400px] object-contain relative z-10 drop-shadow-2xl"
+                width={520}
+                height={600}
+                className="w-full h-auto max-w-[360px] sm:max-w-[440px] lg:max-w-[490px] object-contain relative z-10 select-none drop-shadow-xl"
                 priority
               />
 
-              {/* Floating Node Tag 1 (Left side) */}
-              <div className="absolute -left-2 sm:-left-6 bottom-20 sm:bottom-24 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 bg-slate-950/95 backdrop-blur-md rounded-xl border border-white/30 shadow-2xl">
-                <span className="text-xs sm:text-sm text-white font-bold whitespace-nowrap tracking-wide">
+              {/* Floating Tag 1 (Top right on chest) */}
+              <div className="absolute top-20 sm:top-28 -right-2 sm:right-2 lg:right-4 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg">
+                <span className="text-xs sm:text-sm text-white font-medium whitespace-nowrap tracking-wide">
+                  Healingways makes connection
+                </span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#a3f7bf] shrink-0" />
+              </div>
+
+              {/* Floating Tag 2 (Middle left beside shoulder) */}
+              <div className="absolute bottom-32 sm:bottom-40 -left-4 sm:-left-8 lg:-left-12 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg">
+                <span className="text-xs sm:text-sm text-white font-medium whitespace-nowrap tracking-wide">
                   You don't have to figure it out alone
                 </span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3cd070] shrink-0 animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#a3f7bf] shrink-0" />
               </div>
 
-              {/* Floating Node Tag 2 (Top right) */}
-              <div className="absolute -right-2 sm:-right-6 top-6 sm:top-8 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 bg-slate-950/95 backdrop-blur-md rounded-xl border border-white/30 shadow-2xl">
-                <span className="text-xs sm:text-sm text-white font-bold whitespace-nowrap tracking-wide">
-                  HealingWays makes connection
+              {/* Floating Tag 3 (Lower right on blanket) */}
+              <div className="absolute bottom-10 sm:bottom-14 right-1 sm:right-6 lg:right-8 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg">
+                <span className="text-xs sm:text-sm text-white font-medium whitespace-nowrap tracking-wide">
+                  Healthcare tourism can feel impossible
                 </span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3cd070] shrink-0 animate-pulse" />
-              </div>
-
-              {/* Floating Node Tag 3 (Bottom right) */}
-              <div className="absolute right-0 sm:right-2 -bottom-4 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 bg-slate-950/95 backdrop-blur-md rounded-xl border border-white/30 shadow-2xl">
-                <span className="text-xs sm:text-sm text-white font-bold whitespace-nowrap tracking-wide">
-                  Seamless medical travel navigation
-                </span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3cd070] shrink-0 animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#a3f7bf] shrink-0" />
               </div>
             </div>
           </div>
