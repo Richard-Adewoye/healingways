@@ -66,7 +66,7 @@ export default function HeroSection() {
           </div>
 
           {/* Right Image Graphic & Tooltips */}
-          <div className="lg:col-span-6 relative flex justify-center items-end mt-4 lg:mt-0">
+          <div className="lg:col-span-6 relative flex justify-center items-end mt-4 lg:mt-0 px-2 sm:px-4">
             {/* Crisp vibrant blue circle backdrop framing the patient */}
             <div 
               className="absolute top-4 sm:top-6 lg:top-8 w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[480px] lg:h-[480px] bg-[#0070f3] rounded-full z-0 shadow-lg pointer-events-none"
@@ -79,29 +79,29 @@ export default function HeroSection() {
                 alt="Patient guided by HealingWays healthcare service"
                 width={520}
                 height={600}
-                className="w-full h-auto max-w-[360px] sm:max-w-[440px] lg:max-w-[490px] object-contain relative z-10 select-none drop-shadow-xl"
+                className="w-full h-auto max-w-[340px] sm:max-w-[420px] lg:max-w-[480px] object-contain relative z-10 select-none drop-shadow-xl"
                 priority
               />
 
-              {/* Floating Tag 1 (Top right on chest) */}
-              <div className="absolute top-20 sm:top-28 -right-2 sm:right-2 lg:right-4 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg">
-                <span className="text-xs sm:text-sm text-white font-medium whitespace-nowrap tracking-wide">
+              {/* Floating Tag 1 (Top right side - pushed outwards so it doesn't block patient portrait) */}
+              <div className="absolute top-20 sm:top-24 -right-1 sm:-right-6 lg:-right-10 z-20 flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-white/20 backdrop-blur-md rounded-xl border border-white/30 shadow-md pointer-events-none">
+                <span className="text-[11px] sm:text-xs lg:text-sm text-white font-medium whitespace-nowrap tracking-wide">
                   Healingways makes connection
                 </span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#a3f7bf] shrink-0" />
               </div>
 
-              {/* Floating Tag 2 (Middle left beside shoulder) */}
-              <div className="absolute bottom-32 sm:bottom-40 -left-4 sm:-left-8 lg:-left-12 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg">
-                <span className="text-xs sm:text-sm text-white font-medium whitespace-nowrap tracking-wide">
+              {/* Floating Tag 2 (Middle left side - positioned clear of face & torso) */}
+              <div className="absolute bottom-28 sm:bottom-32 -left-3 sm:-left-8 lg:-left-14 z-20 flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-white/20 backdrop-blur-md rounded-xl border border-white/30 shadow-md pointer-events-none">
+                <span className="text-[11px] sm:text-xs lg:text-sm text-white font-medium whitespace-nowrap tracking-wide">
                   You don't have to figure it out alone
                 </span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#a3f7bf] shrink-0" />
               </div>
 
-              {/* Floating Tag 3 (Lower right on blanket) */}
-              <div className="absolute bottom-10 sm:bottom-14 right-1 sm:right-6 lg:right-8 z-20 flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg">
-                <span className="text-xs sm:text-sm text-white font-medium whitespace-nowrap tracking-wide">
+              {/* Floating Tag 3 (Lower right side - positioned at lower corner edge) */}
+              <div className="absolute bottom-4 sm:bottom-8 right-0 sm:-right-2 lg:right-2 z-20 flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-white/20 backdrop-blur-md rounded-xl border border-white/30 shadow-md pointer-events-none">
+                <span className="text-[11px] sm:text-xs lg:text-sm text-white font-medium whitespace-nowrap tracking-wide">
                   Healthcare tourism can feel impossible
                 </span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#a3f7bf] shrink-0" />
