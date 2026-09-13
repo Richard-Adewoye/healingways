@@ -1,79 +1,91 @@
 import React from 'react';
-import { FileText, Building2, MessageSquare, Home, CreditCard, HeartHandshake } from 'lucide-react';
+import Link from 'next/link';
+import { FileText, Building2, MessageSquare, Home, CreditCard, HeartHandshake, ArrowRight } from 'lucide-react';
 
 const services = [
   {
     icon: FileText,
     title: 'Medical Report Translation',
-    description: 'Ensuring your medical documents are clearly understood by every healthcare provider involved in your care.',
+    description: 'Ensuring your medical documents are clearly translated and structured for every specialist involved in your care.',
   },
   {
     icon: Building2,
     title: 'Hospital & Specialist Placement',
-    description: 'Personalized guidance toward hospitals and specialists suited to your specific healthcare needs.',
+    description: 'Personalized matching with verified international hospitals and board-certified clinical specialists.',
   },
   {
     icon: MessageSquare,
     title: 'Clinical Advisory & Consulting',
-    description: 'Expert guidance to help you understand your options before making important healthcare decisions.',
+    description: 'Expert medical second opinions to help you understand all treatment pathways and therapeutic options.',
   },
   {
     icon: Home,
     title: 'Medical Accommodation & Logistics',
-    description: 'Coordinated accommodation and travel logistics so you can focus on treatment, not arrangements.',
+    description: 'Coordinated accessible lodging, airport medical transfers, and patient-centered hospitality services.',
   },
   {
     icon: CreditCard,
     title: 'Visa Processing & Support',
-    description: 'Guidance through the documentation required for healthcare-related travel.',
+    description: 'Fast-track medical visa invitation letters, consulate guidance, and official travel documentation.',
   },
   {
     icon: HeartHandshake,
     title: 'Post Surgery Support & Advocacy',
-    description: 'Continued support and advocacy through your recovery, long after treatment ends.',
+    description: 'Dedicated post-discharge rehabilitation tracking, telemedicine follow-ups, and long-term recovery advocacy.',
   },
 ];
 
 export default function SectionFour() {
   return (
-    <section className="py-16 bg-slate-50" id="services">
+    <section className="py-16 sm:py-20 lg:py-24 bg-slate-50 border-b border-slate-200/60" id="services">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div>
-          <span className="text-xs font-semibold tracking-wider text-blue-600 uppercase">
+          <span className="text-xs font-bold tracking-wider text-blue-700 uppercase bg-blue-50 px-3 py-1 rounded-md">
             WHAT WE DO
           </span>
-          <h2 className="text-3xl font-bold text-blue-900 mt-1">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight mt-3">
             Support for every stage of your healthcare journey
           </h2>
-          <p className="text-gray-600 max-w-2xl mt-2">
-            We don't sell isolated services — our team activates the right support based on your unique case.
+          <p className="text-slate-600 text-base sm:text-lg max-w-2xl mt-2 leading-relaxed">
+            We don't sell isolated packages — our clinical team activates tailored support based on your unique case file.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {services.map((srv, idx) => {
             const Icon = srv.icon;
             return (
-              <div key={idx} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
-                    <Icon className="w-5 h-5" />
+              <div 
+                key={idx} 
+                className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group"
+              >
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-700 group-hover:bg-emerald-100 transition-colors">
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-lg font-bold text-blue-900">{srv.title}</h3>
-                  <p className="text-sm text-gray-600">{srv.description}</p>
+                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-900 transition-colors">{srv.title}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">{srv.description}</p>
                 </div>
-                <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-800 inline-flex items-center">
-                  Learn more &rarr;
-                </a>
+                <div className="pt-6">
+                  <Link 
+                    href="/services" 
+                    className="text-sm font-bold text-blue-700 hover:text-blue-900 inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden rounded-md"
+                  >
+                    Learn more <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </div>
               </div>
             );
           })}
         </div>
 
-        <div className="text-center">
-          <button className="px-6 py-2.5 bg-white hover:bg-gray-50 text-emerald-700 font-medium rounded-lg border border-emerald-600 transition">
+        <div className="text-center pt-4">
+          <Link 
+            href="/services" 
+            className="inline-flex items-center justify-center px-6 py-3.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-emerald-800 font-bold text-sm rounded-xl border border-emerald-600 shadow-xs hover:shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
+          >
             View All Services
-          </button>
+          </Link>
         </div>
       </div>
     </section>

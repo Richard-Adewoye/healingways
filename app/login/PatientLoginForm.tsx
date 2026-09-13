@@ -138,11 +138,11 @@ export default function PatientLoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-gray-100 p-8 sm:p-10 space-y-6">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xs border border-slate-200/80 p-6 sm:p-8 md:p-10 space-y-6">
         {/* Header & Logo */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <Link href="/" className="relative w-44 h-16 mb-1 block">
+          <Link href="/" className="relative w-44 h-14 mb-2 block rounded-lg focus-visible:ring-2 focus-visible:ring-blue-600">
             <Image
               src="/healing-ways-logo.png"
               alt="HealingWays Logo"
@@ -151,30 +151,30 @@ export default function PatientLoginForm() {
               priority
             />
           </Link>
-          <h1 className="text-xl font-bold text-blue-950">Welcome Back</h1>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Welcome Back</h1>
+          <p className="text-xs sm:text-sm text-slate-600 font-medium">
             Sign in to access your consultations and care journey.
           </p>
         </div>
 
         {/* Account Not Found Prompt */}
         {notFoundUser && (
-          <div className="p-4 bg-amber-50/95 border border-amber-200 rounded-2xl space-y-3 animate-fadeIn">
+          <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl space-y-3 shadow-2xs">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5 text-amber-700">
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5 text-amber-800">
                 <UserX className="w-4 h-4" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-sm font-semibold text-amber-900">No account found</h4>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  We couldn&apos;t find an account for <strong className="font-semibold text-amber-950">{notFoundUser}</strong>. Please sign up to create your account.
+                <h4 className="text-sm font-bold text-amber-950">No account found</h4>
+                <p className="text-xs text-amber-900 leading-relaxed">
+                  We couldn&apos;t find an account for <strong className="font-bold text-slate-900">{notFoundUser}</strong>. Please sign up to create your account.
                 </p>
               </div>
             </div>
             <div className="pt-1">
               <Link
                 href={`/signup?email=${encodeURIComponent(notFoundUser)}`}
-                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl text-center shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-xl text-center shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
                 <span>Sign Up &amp; Create Account</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -185,8 +185,8 @@ export default function PatientLoginForm() {
 
         {/* Generic Error Alert Box */}
         {errorMessage && (
-          <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <div className="p-3.5 bg-red-50 border border-red-200 text-red-900 rounded-xl text-xs sm:text-sm font-medium flex items-center gap-2.5 shadow-2xs">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -195,7 +195,7 @@ export default function PatientLoginForm() {
         <form onSubmit={handleLogin} className="space-y-4">
           {/* Email Input */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
+            <label className="block text-xs font-bold text-slate-800">
               Email Address
             </label>
             <input
@@ -205,14 +205,14 @@ export default function PatientLoginForm() {
               onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="patient@healingways.com"
               disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all disabled:opacity-50"
             />
           </div>
 
           {/* Password Input */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <label className="block text-xs font-bold text-blue-900">
+              <label className="block text-xs font-bold text-slate-800">
                 Password
               </label>
             </div>
@@ -223,7 +223,7 @@ export default function PatientLoginForm() {
               onChange={(e) => handlePasswordChange(e.target.value)}
               placeholder="••••••••"
               disabled={loading}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all disabled:opacity-50"
             />
           </div>
 
@@ -231,7 +231,7 @@ export default function PatientLoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center cursor-pointer mt-2"
+            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md transition-all disabled:opacity-50 flex justify-center items-center cursor-pointer mt-2 focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
@@ -245,21 +245,21 @@ export default function PatientLoginForm() {
         </form>
 
         {/* Footer Navigation */}
-        <div className="pt-4 border-t border-gray-100 space-y-3 text-center">
-          <p className="text-xs text-gray-600">
+        <div className="pt-4 border-t border-slate-100 space-y-3 text-center">
+          <p className="text-xs text-slate-600">
             Don&apos;t have an account?{' '}
             <Link
               href={identifier ? `/signup?email=${encodeURIComponent(identifier)}` : '/signup'}
-              className="font-bold text-emerald-700 hover:underline"
+              className="font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
             >
               Create an Account
             </Link>
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-slate-500">
             Need immediate clinical guidance?{' '}
             <Link
               href="/consultation"
-              className="font-medium text-blue-900 hover:underline"
+              className="font-semibold text-blue-800 hover:text-blue-950 hover:underline"
             >
               Start Free Consultation Intake
             </Link>

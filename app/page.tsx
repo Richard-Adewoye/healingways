@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 import { AnimatedLogoLoader } from './components/AnimatedLogoLoader';
 import HeroSection from './components/HeroSection';

@@ -56,7 +56,6 @@ function RegisterForm() {
     }
   });
 
-  // Password fields are strictly empty by default and never pre-filled
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -205,11 +204,11 @@ function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 my-8 sm:my-0">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-gray-100 p-8 sm:p-10 space-y-6">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 my-6 sm:my-0">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xs border border-slate-200/80 p-6 sm:p-8 md:p-10 space-y-6">
         {/* Header & Logo */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <Link href="/" className="relative w-44 h-16 mb-1 block">
+          <Link href="/" className="relative w-44 h-14 mb-2 block rounded-lg focus-visible:ring-2 focus-visible:ring-blue-600">
             <Image
               src="/healing-ways-logo.png"
               alt="HealingWays Logo"
@@ -218,10 +217,10 @@ function RegisterForm() {
               priority
             />
           </Link>
-          <h1 className="text-xl font-bold text-blue-950">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             {hasCompletedConsultation ? 'Finalize Your Account' : 'Create Your Account'}
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium">
+          <p className="text-xs sm:text-sm text-slate-600 font-medium">
             {hasCompletedConsultation
               ? 'Enter a password to finalize your account and access your care dashboard.'
               : 'Join HealingWays to manage your medical consultations and track your care journey.'}
@@ -230,10 +229,10 @@ function RegisterForm() {
 
         {/* Informative Banner only when explicitly coming from consultation */}
         {hasCompletedConsultation && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900 leading-relaxed animate-fadeIn">
-            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3 text-xs text-emerald-950 leading-relaxed shadow-2xs">
+            <Sparkles className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold block text-emerald-950">
+              <span className="font-bold block text-emerald-950">
                 Step 2: Finalize Account {caseReference ? `• Case ${caseReference}` : ''}
               </span>
               Consultation intake received! Create a password below to finalize your account.
@@ -243,16 +242,16 @@ function RegisterForm() {
 
         {/* Error Alert Box */}
         {errorMessage && (
-          <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium space-y-2">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <div className="p-3.5 bg-red-50 border border-red-200 text-red-900 rounded-xl text-xs sm:text-sm font-medium space-y-2 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
               <span>{errorMessage}</span>
             </div>
             {accountExistsError && (
               <div className="pt-1">
                 <Link
                   href={`/login?email=${encodeURIComponent(email)}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg text-xs font-bold shadow-xs transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <span>Sign in to your account</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -266,7 +265,7 @@ function RegisterForm() {
         <form onSubmit={handleRegister} autoComplete="off" className="space-y-4">
           {/* Full Name Input */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
+            <label className="block text-xs font-bold text-slate-800">
               Full Name
             </label>
             <input
@@ -277,13 +276,13 @@ function RegisterForm() {
               placeholder="Jane Doe"
               disabled={loading}
               autoComplete="name"
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all disabled:opacity-50"
             />
           </div>
 
           {/* Email Input */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-blue-900">
+            <label className="block text-xs font-bold text-slate-800">
               Email Address
             </label>
             <input
@@ -294,13 +293,13 @@ function RegisterForm() {
               placeholder="you@example.com"
               disabled={loading}
               autoComplete="email"
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all disabled:opacity-50"
             />
           </div>
 
           {/* Password Input */}
           <div className="space-y-1.5">
-            <label htmlFor="hw_signup_password" className="block text-xs font-bold text-blue-900">
+            <label htmlFor="hw_signup_password" className="block text-xs font-bold text-slate-800">
               Password (min. 6 characters)
             </label>
             <div className="relative">
@@ -317,13 +316,13 @@ function RegisterForm() {
                 data-lpignore="true"
                 data-form-type="other"
                 data-1p-ignore="true"
-                className="w-full px-4 py-3 pr-11 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                className="w-full px-4 py-3 pr-11 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
                 tabIndex={-1}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 title={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -333,7 +332,7 @@ function RegisterForm() {
 
           {/* Confirm Password Input */}
           <div className="space-y-1.5">
-            <label htmlFor="hw_signup_confirm_password" className="block text-xs font-bold text-blue-900">
+            <label htmlFor="hw_signup_confirm_password" className="block text-xs font-bold text-slate-800">
               Confirm Password
             </label>
             <div className="relative">
@@ -350,13 +349,13 @@ function RegisterForm() {
                 data-lpignore="true"
                 data-form-type="other"
                 data-1p-ignore="true"
-                className="w-full px-4 py-3 pr-11 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                className="w-full px-4 py-3 pr-11 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword((prev) => !prev)}
                 tabIndex={-1}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 title={showConfirmPassword ? 'Hide password' : 'Show password'}
               >
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -368,7 +367,7 @@ function RegisterForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center mt-2 cursor-pointer"
+            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md transition-all disabled:opacity-50 flex justify-center items-center mt-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
@@ -384,10 +383,10 @@ function RegisterForm() {
           </button>
         </form>
 
-        <div className="border-t border-gray-100 pt-2" />
+        <div className="border-t border-slate-100 pt-2" />
 
         {/* Login Back Link */}
-        <div className="text-center text-xs text-gray-600 pt-1">
+        <div className="text-center text-xs text-slate-600 pt-1">
           Already have an account?{' '}
           <Link
             href={email ? `/login?email=${encodeURIComponent(email)}` : '/login'}

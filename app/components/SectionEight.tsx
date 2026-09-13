@@ -8,78 +8,87 @@ const homepageFaqs = [
   {
     question: 'What is HealingWays?',
     answer:
-      'HealingWays is a healthcare navigation and coordination platform that helps patients and families make confident healthcare decisions \u2014 connecting them with trusted hospitals and specialists locally and internationally, with guidance at every step.',
+      'HealingWays is a healthcare navigation and coordination platform that helps patients and families make confident healthcare decisions — connecting them with trusted hospitals and specialists locally and internationally, with dedicated guidance at every step.',
   },
   {
     question: 'What makes HealingWays different from a medical tourism company?',
     answer:
-      'HealingWays does not sell destinations. Our role is to help you understand your options, connect with suitable healthcare providers, and coordinate the practical support your journey needs \u2014 guidance and coordination, not a travel package.',
+      'HealingWays does not sell destinations or standardized tourist packages. Our role is clinical navigation: helping you understand your medical options, match with certified healthcare providers, and coordinate practical logistics with your medical team.',
   },
   {
     question: 'Does HealingWays provide medical treatment?',
     answer:
-      "No. We don't diagnose, treat, or perform procedures. We work alongside qualified healthcare professionals and institutions to help you access appropriate care.",
+      "No. We do not diagnose, treat, or perform procedures directly. We work alongside accredited doctors, surgeons, and healthcare institutions to help you safely access top-tier medical care.",
   },
   {
     question: 'How do I begin my healthcare journey with HealingWays?',
     answer:
-      'It starts with a consultation. You share information about your healthcare needs, and our team reviews your situation to determine how we can best support you.',
+      'It starts with a simple consultation. You share information about your health situation and upload any existing reports. Our clinical team reviews your file to prepare tailored recommendations.',
   },
   {
     question: 'Do I need to know exactly what service I need first?',
     answer:
-      "Not at all. Many patients come to us unsure of where to begin \u2014 that's exactly what we help clarify.",
+      "Not at all. Many patients come to us unsure of the exact treatment pathway or specialty required — clarifying your options is the cornerstone of our clinical intake service.",
   },
 ];
 
 export default function SectionEight() {
-  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   const toggleAccordion = (idx: number) => {
     setOpenIdx(openIdx === idx ? null : idx);
   };
 
   return (
-    <section className="py-16 bg-slate-50">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <section className="py-16 sm:py-20 lg:py-24 bg-slate-50 border-b border-slate-200/60">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <div>
-          <span className="text-xs font-semibold tracking-wider text-blue-600 uppercase">
+          <span className="text-xs font-bold tracking-wider text-blue-700 uppercase bg-blue-50 px-3 py-1 rounded-md">
             COMMON QUESTIONS
           </span>
-          <h2 className="text-3xl font-bold text-blue-900 mt-1">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight mt-3">
             Answers before you begin
           </h2>
         </div>
 
-        <div className="divide-y divide-gray-200">
-          {homepageFaqs.map((faq, idx) => (
-            <div key={idx} className="py-4">
-              <button
-                onClick={() => toggleAccordion(idx)}
-                className="w-full flex justify-between items-center text-left focus:outline-none group cursor-pointer"
+        <div className="space-y-4">
+          {homepageFaqs.map((faq, idx) => {
+            const isOpen = openIdx === idx;
+            return (
+              <div 
+                key={idx} 
+                className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs transition-all"
               >
-                <span className="font-semibold text-blue-900 group-hover:text-blue-700 transition-colors text-sm sm:text-base pr-4">
-                  {faq.question}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 text-blue-600 transition-transform duration-200 shrink-0 ${
-                    openIdx === idx ? 'transform rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {openIdx === idx && (
-                <p className="mt-3 text-xs sm:text-sm text-gray-600 leading-relaxed pr-6">
-                  {faq.answer}
-                </p>
-              )}
-            </div>
-          ))}
+                <button
+                  onClick={() => toggleAccordion(idx)}
+                  className="w-full flex justify-between items-center text-left p-5 sm:p-6 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden group cursor-pointer"
+                  aria-expanded={isOpen}
+                >
+                  <span className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors text-base sm:text-lg pr-4">
+                    {faq.question}
+                  </span>
+                  <div className={`p-1.5 rounded-full bg-slate-100 group-hover:bg-blue-50 transition-colors shrink-0 ${isOpen ? 'bg-blue-100 text-blue-800' : 'text-slate-600'}`}>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        isOpen ? 'rotate-180 text-blue-700' : ''
+                      }`}
+                    />
+                  </div>
+                </button>
+                {isOpen && (
+                  <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 text-slate-600 text-sm sm:text-base leading-relaxed border-t border-slate-100 mt-1">
+                    <p className="pt-3">{faq.answer}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        <div>
+        <div className="pt-2">
           <Link
             href="/faq"
-            className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            className="text-sm font-bold text-blue-700 hover:text-blue-900 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden rounded-md transition-colors inline-flex items-center gap-1.5 cursor-pointer"
           >
             View All FAQs &rarr;
           </Link>

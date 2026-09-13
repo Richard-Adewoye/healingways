@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   Home,
   PlusSquare,
@@ -40,7 +40,6 @@ interface SidebarProps {
 
 export default function Sidebar({ isMobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const handleLogout = async () => {
     try {
@@ -57,7 +56,8 @@ export default function Sidebar({ isMobileOpen = false, onClose }: SidebarProps)
       {isMobileOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden transition-opacity duration-200"
+          aria-hidden="true"
         />
       )}
 
@@ -65,26 +65,27 @@ export default function Sidebar({ isMobileOpen = false, onClose }: SidebarProps)
       <aside
         className={`
           fixed md:static top-0 bottom-0 left-0 z-50
-          w-64 bg-slate-50 border-r border-slate-200/80 min-h-screen flex flex-col p-4 flex-shrink-0
-          transition-transform duration-300 ease-in-out
+          w-64 bg-white md:bg-slate-50 border-r border-slate-200/90 min-h-screen flex flex-col p-4 flex-shrink-0
+          transition-transform duration-300 ease-in-out shadow-lg md:shadow-none
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
+        aria-label="Sidebar Navigation"
       >
         {/* Brand Logo & Mobile Close Button */}
         <div className="px-3 py-2 mb-4 flex items-center justify-between">
-          <Link href="/dashboard" onClick={onClose} className="flex items-center gap-2">
+          <Link href="/dashboard" onClick={onClose} className="flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-600 rounded-lg">
             <Image
-              src="/images/logo.png"
+              src="/healing-ways-logo.png"
               alt="HealingWays"
-              width={150}
-              height={40}
+              width={140}
+              height={38}
               className="h-9 w-auto object-contain"
               priority
             />
           </Link>
           <button
             onClick={onClose}
-            className="md:hidden p-1 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 transition-colors"
+            className="md:hidden p-1.5 text-slate-500 hover:text-slate-900 active:bg-slate-200 rounded-lg hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-blue-600"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -92,7 +93,7 @@ export default function Sidebar({ isMobileOpen = false, onClose }: SidebarProps)
         </div>
 
         {/* Navigation Links */}
-        <nav className="space-y-1.5 flex-1 overflow-y-auto">
+        <nav className="space-y-1 flex-1 overflow-y-auto pr-1" aria-label="Dashboard views">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -102,15 +103,15 @@ export default function Sidebar({ isMobileOpen = false, onClose }: SidebarProps)
                 key={item.name}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden ${
                   isActive
-                    ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-100/90 active:bg-slate-200 hover:text-slate-900'
                 }`}
               >
                 <Icon
                   className={`w-4 h-4 flex-shrink-0 ${
-                    isActive ? 'text-blue-600' : 'text-emerald-600'
+                    isActive ? 'text-white' : 'text-emerald-700'
                   }`}
                 />
                 <span className="leading-tight">{item.name}</span>
@@ -120,12 +121,12 @@ export default function Sidebar({ isMobileOpen = false, onClose }: SidebarProps)
         </nav>
 
         {/* Logout Button */}
-        <div className="pt-4 border-t border-slate-200/80 mt-auto">
+        <div className="pt-4 border-t border-slate-200/90 mt-auto">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all text-left"
+            className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-red-50 hover:text-red-700 active:bg-red-100 transition-all text-left focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-hidden cursor-pointer"
           >
-            <LogOut className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+            <LogOut className="w-4 h-4 flex-shrink-0 text-red-600" />
             <span className="leading-tight">Log Out</span>
           </button>
         </div>

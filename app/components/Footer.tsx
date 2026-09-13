@@ -2,25 +2,26 @@ import React from 'react';
 import Link from 'next/link';
 
 const quickLinks = [
-  { name: 'About', href: '/about' },
-  { name: 'Services', href: '/services' },
+  { name: 'About Us', href: '/about' },
+  { name: 'Our Services', href: '/services' },
   { name: 'Partner Hospitals', href: '/partner-hospitals' },
-  { name: 'Blog', href: '/blog' },
+  { name: 'Medical Blog', href: '/blog' },
   { name: 'FAQs', href: '/faq' },
-  { name: 'Contact', href: '/contact' },
+  { name: 'Contact Us', href: '/contact' },
 ];
 
 const servicesLinks = [
-  'Medical Report Translation',
-  'Hospital & Specialist Placement',
-  'Clinical Advisory & Consulting',
-  'Medical Accommodation & Logistics',
-  'Visa Processing & Support',
+  { name: 'Medical Report Translation', href: '/services' },
+  { name: 'Hospital & Specialist Placement', href: '/services' },
+  { name: 'Clinical Advisory & Consulting', href: '/services' },
+  { name: 'Medical Accommodation & Logistics', href: '/services' },
+  { name: 'Visa Processing & Support', href: '/services' },
 ];
 
 const patientResources = [
   { name: 'Start Consultation', href: '/consultation' },
   { name: 'Patient Login', href: '/login' },
+  { name: 'Admin Portal', href: '/admin' },
   { name: 'Privacy Policy', href: '#' },
   { name: 'Terms of Use', href: '#' },
   { name: 'Medical Disclaimer', href: '#' },
@@ -28,24 +29,27 @@ const patientResources = [
 
 export default function Footer() {
   return (
-    <footer className="bg-blue-900 text-white pt-16 pb-8">
+    <footer className="bg-blue-950 text-white pt-16 pb-12 border-t border-blue-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 text-sm">
           {/* Brand Info */}
-          <div className="space-y-3">
-            <h3 className="text-xl font-bold tracking-tight">HealingWays®</h3>
-            <p className="text-blue-200 leading-relaxed">
-              Your compass to healthy living. Helping patients and families make confident healthcare decisions, locally and abroad.
+          <div className="space-y-4 sm:col-span-2 lg:col-span-2">
+            <h3 className="text-2xl font-extrabold tracking-tight text-white">HealingWays®</h3>
+            <p className="text-blue-200 text-sm leading-relaxed max-w-sm">
+              Your compass to healthy living. Guiding patients and families to make confident healthcare decisions with trusted international hospital partners and personalized medical navigation.
             </p>
+            <div className="pt-2 text-xs text-blue-300">
+              <span>Accredited Clinical Coordination Network</span>
+            </div>
           </div>
 
           {/* Quick Links */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider">Quick Links</h4>
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-2 text-blue-200">
               {quickLinks.map((item, idx) => (
                 <li key={idx}>
-                  <Link href={item.href} className="hover:text-white transition">
+                  <Link href={item.href} className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xs">
                     {item.name}
                   </Link>
                 </li>
@@ -55,25 +59,11 @@ export default function Footer() {
 
           {/* Services */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider">Services</h4>
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider">Services</h4>
             <ul className="space-y-2 text-blue-200">
               {servicesLinks.map((item, idx) => (
                 <li key={idx}>
-                  <span className="hover:text-white transition cursor-default">
-                    {item}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Patient Resources */}
-          <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider">Patient Resources</h4>
-            <ul className="space-y-2 text-blue-200">
-              {patientResources.map((item, idx) => (
-                <li key={idx}>
-                  <Link href={item.href} className="hover:text-white transition">
+                  <Link href={item.href} className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xs">
                     {item.name}
                   </Link>
                 </li>
@@ -81,22 +71,25 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact Details */}
+          {/* Patient Resources */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider">Contact</h4>
-            <p className="text-blue-200">+234 800 123 4567</p>
-            <p className="text-blue-200">care@healingways.org</p>
-            <p className="text-blue-200">Chat on WhatsApp</p>
-            <p className="text-blue-300 pt-2">Lagos · Accra · Remote-first team</p>
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider">Patient Portal</h4>
+            <ul className="space-y-2 text-blue-200">
+              {patientResources.map((item, idx) => (
+                <li key={idx}>
+                  <Link href={item.href} className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xs">
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        <hr className="border-blue-800" />
-
-        <div className="flex flex-col sm:flex-row justify-between items-center text-[11px] text-blue-300 gap-4">
+        <div className="pt-8 border-t border-blue-900/80 flex flex-col sm:flex-row justify-between items-center text-xs text-blue-300 gap-4">
           <p>© 2026 HealingWays. All rights reserved.</p>
-          <p className="text-center sm:text-right">
-            HealingWays provides healthcare navigation and coordination. We do not provide medical treatment.
+          <p className="text-center sm:text-right text-[11px] text-blue-400 max-w-lg">
+            HealingWays provides healthcare navigation and care coordination services. We work with accredited medical institutions and do not directly deliver medical treatment.
           </p>
         </div>
       </div>

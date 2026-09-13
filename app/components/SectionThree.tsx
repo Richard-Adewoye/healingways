@@ -1,49 +1,55 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 
 const highlights = [
-  '8+ years coordinating patient care',
-  '40+ partner hospitals across our network',
-  'Round-the-clock support when you need it',
-  'A dedicated team, from day one to discharge',
+  '8+ years coordinating specialized patient care',
+  '40+ partner hospitals across our accredited network',
+  'Round-the-clock support when you need it most',
+  'A dedicated care coordinator, from day one to discharge',
 ];
 
 export default function SectionThree() {
   return (
-    <section className="py-16 bg-white">
+    <section className="py-16 sm:py-20 lg:py-24 bg-white border-b border-slate-200/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Text Left */}
           <div className="space-y-6">
-            <h2 className="text-3xl sm:text-4xl font-bold text-blue-900">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight leading-tight">
               Trusted care, wherever your journey leads
             </h2>
-            <p className="text-gray-600">
+            <p className="text-slate-600 text-base sm:text-lg leading-relaxed">
               We've built real relationships with hospitals and specialists across our network, so you're never starting from zero. Wherever treatment takes you, someone who knows the way is already there.
             </p>
-            <ul className="space-y-3">
+            <ul className="space-y-3.5">
               {highlights.map((item, idx) => (
-                <li key={idx} className="flex items-center space-x-3 text-gray-700">
+                <li key={idx} className="flex items-center space-x-3 text-slate-700 text-sm sm:text-base">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
-            <button className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition">
-              Book a Consultation
-            </button>
+            <div className="pt-2">
+              <Link 
+                href="/consultation"
+                className="inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden transition-all cursor-pointer"
+              >
+                Book a Consultation
+              </Link>
+            </div>
           </div>
 
           {/* Image Right with Backdrop Accent */}
           <div className="relative">
-            <div className="absolute inset-0 bg-emerald-100 transform translate-x-4 -translate-y-4 rounded-xl -z-10" />
+            <div className="absolute inset-0 bg-emerald-100 transform translate-x-3 -translate-y-3 rounded-2xl -z-10" />
             <Image
               src="/images/image-four.avif"
               alt="Medical Consultation"
               width={600}
               height={400}
-              className="rounded-xl object-cover shadow-md"
+              className="rounded-2xl object-cover shadow-md w-full h-auto"
             />
           </div>
         </div>
