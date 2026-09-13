@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { ShieldCheck, Lock, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { AdminHeader } from './_components/admin-header';
 import { AdminSidebar } from './_components/admin-sidebar';
-import { getStoredUser, loginUser, isAdminEmail, UserProfile } from '@/app/lib/firebase/services';
+import { getStoredUser, loginUser, signInWithGoogle, isAdminEmail, UserProfile } from '@/app/lib/firebase/services';
+import GoogleIcon from '@/app/components/GoogleIcon';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,6 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [adminEmail, setAdminEmail] = useState('dsgn.moore.usl@gmail.com');
   const [adminPassword, setAdminPassword] = useState('moore_USL@123');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,6 +60,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setLoginError(errorObj?.message || 'Failed to authenticate administrator.');
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  const handleAdminGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setLoginError(null);
+
+    try {
+      const res = await signInWithGoogle();
+      if (res.success && res.user) {
+        if (res.user.role === 'admin' || isAdminEmail(res.user.email)) {
+          setAdminUser(res.user);
+        } else {
+          setLoginError(`The Google account (${res.user.email}) is not registered with administrator privileges.`);
+        }
+      } else if (res.error) {
+        setLoginError(res.error);
+      }
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string };
+      setLoginError(errorObj?.message || 'Failed to authenticate via Google.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -104,6 +129,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span>{loginError}</span>
             </div>
           )}
+
+          {/* Google Sign In for Admin */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              id="admin-google-signin-button"
+              onClick={handleAdminGoogleLogin}
+              disabled={loginLoading || googleLoading}
+              className="w-full py-3.5 px-4 bg-slate-700/80 hover:bg-slate-700 active:bg-slate-600 border border-slate-600 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden"
+            >
+              {googleLoading ? (
+                <span className="inline-flex items-center gap-2 text-slate-300">
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                  Authenticating with Google...
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2.5 text-white">
+                  <GoogleIcon className="w-5 h-5 shrink-0" />
+                  <span>Sign in with Google</span>
+                </span>
+              )}
+            </button>
+
+            <div className="relative flex items-center justify-center">
+              <div className="border-t border-slate-700 w-full" />
+              <span className="bg-slate-800 px-3 text-xs uppercase tracking-wider text-slate-400 font-medium shrink-0">
+                or use admin credentials
+              </span>
+            </div>
+          </div>
 
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="space-y-1.5">

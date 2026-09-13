@@ -17,6 +17,8 @@ import {
 } from 'firebase/firestore';
 import {
   signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth, db } from './client';
 
@@ -796,6 +798,163 @@ export async function loginUser(emailInput: string, passwordInput: string): Prom
   // 4. Set stored session and return success
   setStoredUser(firestoreUserDoc);
   return { success: true, user: firestoreUserDoc };
+}
+
+/**
+ * Sign in or Sign up with Google OAuth popup
+ */
+export async function signInWithGoogle(): Promise<AuthResult> {
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const cleanEmail = (user.email || '').trim().toLowerCase();
+    const uid = user.uid;
+    const displayName = user.displayName?.trim() || (cleanEmail ? cleanEmail.split('@')[0] : 'Patient');
+    const role = isAdminEmail(cleanEmail) ? 'admin' : 'patient';
+    const now = new Date().toISOString();
+
+    // 1. Check if user profile already exists
+    let profile = await getUserProfileByUid(uid);
+    if (!profile && cleanEmail) {
+      profile = await getUserProfileByEmail(cleanEmail);
+    }
+
+    if (!profile) {
+      // 2. New account via Google OAuth
+      profile = {
+        uid,
+        email: cleanEmail,
+        fullName: displayName,
+        role,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      try {
+        const userDocRef = doc(db, 'users', uid);
+        await withTimeout(
+          setDoc(userDocRef, {
+            ...profile,
+            isRegistered: true,
+            authProvider: 'google',
+            photoURL: user.photoURL || '',
+          }, { merge: true }),
+          3500
+        );
+      } catch (err) {
+        console.warn('Notice saving Google OAuth user to Firestore:', err);
+      }
+    } else {
+      // 3. Existing account - sync details
+      profile = {
+        ...profile,
+        fullName: profile.fullName && profile.fullName.toLowerCase() !== 'patient' ? profile.fullName : displayName,
+        updatedAt: now,
+      };
+
+      try {
+        const userDocRef = doc(db, 'users', profile.uid);
+        await withTimeout(
+          setDoc(userDocRef, {
+            ...profile,
+            isRegistered: true,
+            authProvider: 'google',
+            photoURL: user.photoURL || '',
+            lastLoginAt: now,
+          }, { merge: true }),
+          2500
+        );
+      } catch {}
+    }
+
+    // 4. Cache in local registered users registry
+    saveLocalRegisteredUser({
+      ...profile,
+      password: '', // OAuth user
+    });
+
+    // 5. Link any unassigned consultation case for this email
+    if (cleanEmail) {
+      try {
+        const casesRef = collection(db, 'cases');
+        const q = query(casesRef, where('patient_email', '==', cleanEmail));
+        const snap = await withTimeout(getDocs(q), 2500, null);
+        if (snap && !snap.empty) {
+          for (const caseDoc of snap.docs) {
+            try {
+              await updateDoc(doc(db, 'cases', caseDoc.id), {
+                user_id: profile.uid,
+                patient_name: profile.fullName || caseDoc.data().patient_name,
+              });
+            } catch {}
+          }
+        }
+      } catch (linkErr) {
+        console.warn('Notice linking consultation cases during Google OAuth:', linkErr);
+      }
+    }
+
+    // 6. Clear previous session's transient caches
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('hw_active_case');
+        localStorage.removeItem('hw_active_case_id');
+        localStorage.removeItem('hw_consultation_completed');
+        localStorage.removeItem('hw_consultation_completed_case_id');
+        localStorage.removeItem('hw_consultation_form_data');
+        localStorage.removeItem('hw_consultation_current_step');
+        localStorage.removeItem('hw_consultation_case_id');
+        sessionStorage.clear();
+      } catch {}
+    }
+
+    // 7. Set stored active user session
+    setStoredUser(profile);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('hw_auth_changed', { detail: profile }));
+    }
+
+    return { success: true, user: profile };
+  } catch (error: unknown) {
+    console.error('Google OAuth error:', error);
+    const err = error as { code?: string; message?: string };
+    const code = err?.code || '';
+
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      return {
+        success: false,
+        reason: 'general',
+        error: 'The Google sign-in window was closed before completing.',
+      };
+    }
+
+    if (code === 'auth/popup-blocked') {
+      return {
+        success: false,
+        reason: 'general',
+        error: 'Popup was blocked by your browser. Please allow popups for this site and try again.',
+      };
+    }
+
+    if (code === 'auth/account-exists-with-different-credential') {
+      return {
+        success: false,
+        reason: 'general',
+        error: 'An account already exists with this email address using a different sign-in method.',
+      };
+    }
+
+    return {
+      success: false,
+      reason: 'general',
+      error: err?.message || 'Failed to authenticate with Google. Please try again.',
+    };
+  }
 }
 
 /**

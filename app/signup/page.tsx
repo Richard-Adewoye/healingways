@@ -5,7 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, Sparkles, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { registerUser, getUserActiveCase, isAdminEmail } from '@/app/lib/firebase/services';
+import { registerUser, signInWithGoogle, getUserActiveCase, isAdminEmail } from '@/app/lib/firebase/services';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/app/lib/firebase/client';
+import GoogleIcon from '@/app/components/GoogleIcon';
 
 function RegisterForm() {
   const router = useRouter();
@@ -61,6 +64,7 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Force clean draft password storage on mount
   useEffect(() => {
@@ -203,6 +207,62 @@ function RegisterForm() {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    setGoogleLoading(true);
+    setErrorMessage(null);
+    setAccountExistsError(false);
+    try {
+      sessionStorage.removeItem('hw_signup_error_msg');
+    } catch {}
+
+    try {
+      const res = await signInWithGoogle();
+      if (res.success && res.user) {
+        // If coming from consultation with an explicit caseId, link the case
+        if (caseReference) {
+          try {
+            const caseRef = doc(db, 'cases', caseReference);
+            await updateDoc(caseRef, {
+              user_id: res.user.uid,
+              patient_name: res.user.fullName || 'Patient',
+              patient_email: res.user.email,
+            });
+          } catch (e) {
+            console.warn('Could not link explicit caseId to Google user:', e);
+          }
+        }
+
+        try {
+          await getUserActiveCase(res.user.uid, res.user.email);
+        } catch (linkErr) {
+          console.warn('Failed to link active case:', linkErr);
+        }
+
+        try {
+          sessionStorage.removeItem('hw_signup_draft_fullname');
+          sessionStorage.removeItem('hw_signup_draft_email');
+          sessionStorage.removeItem('hw_login_not_found_user');
+          sessionStorage.removeItem('hw_signup_error_msg');
+        } catch {}
+
+        const destination = res.user.role === 'admin' || isAdminEmail(res.user.email) ? '/admin' : '/dashboard';
+        router.push(destination);
+        router.refresh();
+        return;
+      }
+
+      if (res.error) {
+        setErrorMessage(res.error);
+      }
+    } catch (err: unknown) {
+      console.error('Google signup error:', err);
+      const typed = err as { message?: string };
+      setErrorMessage(typed?.message || 'Failed to sign up with Google. Please try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 my-6 sm:my-0">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xs border border-slate-200/80 p-6 sm:p-8 md:p-10 space-y-6">
@@ -260,6 +320,36 @@ function RegisterForm() {
             )}
           </div>
         )}
+
+        {/* Google Sign Up Action */}
+        <div className="space-y-4">
+          <button
+            type="button"
+            id="google-signup-button"
+            onClick={handleGoogleSignUp}
+            disabled={loading || googleLoading}
+            className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 rounded-xl text-slate-800 font-bold text-sm flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-hidden"
+          >
+            {googleLoading ? (
+              <span className="inline-flex items-center gap-2 text-slate-700 font-medium">
+                <Loader2 className="w-4 h-4 animate-spin text-slate-700" />
+                Connecting with Google...
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-3 text-slate-800">
+                <GoogleIcon className="w-5 h-5 shrink-0" />
+                <span>Sign up with Google</span>
+              </span>
+            )}
+          </button>
+
+          <div className="relative flex items-center justify-center">
+            <div className="border-t border-slate-200 w-full" />
+            <span className="bg-white px-3 text-xs uppercase tracking-wider text-slate-400 font-semibold shrink-0">
+              or register with email
+            </span>
+          </div>
+        </div>
 
         {/* Registration Form */}
         <form onSubmit={handleRegister} autoComplete="off" className="space-y-4">
